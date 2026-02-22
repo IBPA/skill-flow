@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""Standalone SkillFlow client for use inside containers."""
+
+import json
+import os
+import sys
+import urllib.request
+import urllib.error
+import urllib.parse
+
+# Candidate URLs to try (in order of preference)
+# - host.docker.internal: Docker convention, works with WSL2/Docker Desktop
+# - 172.17.0.1: Docker bridge gateway, works on standard Linux Docker
+CANDIDATE_URLS = [
+    "http://host.docker.internal:8765",
+    "http://172.17.0.1:8765",
+]
+
+_cached_peer_url = None
+
+
+def get_peer_url():
+    """Get the peer URL, auto-detecting if not set via env var."""
+    global _cached_peer_url
+
+    # Check env var first
+    env_url = os.environ.get("SKILLFLOW_PEER_URL")
+    if env_url:
+        return env_url
+
+    # Use cached result if available
+    if _cached_peer_url:
+        return _cached_peer_url
+
+    # Try each candidate URL
+    for url in CANDIDATE_URLS:
+        try:
+            health_url = f"{url}/health"
+            with urllib.request.urlopen(health_url, timeout=2) as response:
+                if response.status == 200:
+                    _cached_peer_url = url
+                    return url
+        except (urllib.error.URLError, OSError):
+            continue
+
+    # Fallback to first candidate (will fail with helpful error)
+    return CANDIDATE_URLS[0]
+
+
+def search(query, limit=5):
+    peer_url = get_peer_url()
+    params = urllib.parse.urlencode({"query": query, "limit": limit})
+    url = f"{peer_url}/skills?{params}"
+
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            data = json.loads(response.read().decode())
+    except urllib.error.URLError as e:
+        print(f"Error: Could not connect to SkillFlow peer at {peer_url}", file=sys.stderr)
+        print(f"Details: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    skills = data.get("skills", [])
+    if not skills:
+        print("No matching skills found.")
+        return
+
+    print(f"Found {len(skills)} matching skill(s):\n")
+    for i, skill in enumerate(skills, 1):
+        print(f"{i}. {skill['id']}")
+        desc = skill.get("description", "")
+        if len(desc) > 100:
+            desc = desc[:100] + "..."
+        print(f"   {desc}\n")
+
+
+def get_skill(skill_id):
+    """Fetch and display a skill's content."""
+    peer_url = get_peer_url()
+    url = f"{peer_url}/skills/{skill_id}"
+
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            data = json.loads(response.read().decode())
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            print(f"Error: Skill '{skill_id}' not found", file=sys.stderr)
+        else:
+            print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except urllib.error.URLError as e:
+        print(f"Error: Could not connect to SkillFlow peer at {peer_url}", file=sys.stderr)
+        sys.exit(1)
+
+    print(data.get("content", ""))
+
+
+def save_skill(skill_id):
+    """Fetch a skill and save it to .skills folder."""
+    peer_url = get_peer_url()
+    url = f"{peer_url}/skills/{skill_id}"
+
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            data = json.loads(response.read().decode())
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            print(f"Error: Skill '{skill_id}' not found", file=sys.stderr)
+        else:
+            print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except urllib.error.URLError as e:
+        print(f"Error: Could not connect to SkillFlow peer at {peer_url}", file=sys.stderr)
+        sys.exit(1)
+
+    content = data.get("content", "")
+
+    # Save to .skills/<skill-id>/SKILL.md
+    skills_dir = os.path.join(os.getcwd(), ".skills", skill_id)
+    os.makedirs(skills_dir, exist_ok=True)
+    skill_path = os.path.join(skills_dir, "SKILL.md")
+    with open(skill_path, "w") as f:
+        f.write(content)
+    print(f"Skill saved to {skill_path}")
+
+
+def health():
+    peer_url = get_peer_url()
+    url = f"{peer_url}/health"
+
+    try:
+        with urllib.request.urlopen(url, timeout=10) as response:
+            data = json.loads(response.read().decode())
+    except urllib.error.URLError as e:
+        print(f"Error: Could not connect to SkillFlow peer at {peer_url}", file=sys.stderr)
+        sys.exit(1)
+
+    status = data.get("status", "unknown")
+    skill_count = data.get("skill_count", 0)
+    print(f"SkillFlow peer is {status} ({skill_count} skills available)")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: skillflow-client <command> [args]")
+        print("Commands:")
+        print("  search <query>   - Search for skills")
+        print("  get <skill-id>   - View skill content")
+        print("  save <skill-id>  - Save skill to .skills/<skill-id>/SKILL.md")
+        print("  health           - Check peer status")
+        print("")
+        print("After saving, edit .skills/<skill-id>/SKILL.md directly to adapt.")
+        sys.exit(1)
+
+    command = sys.argv[1]
+
+    if command == "search":
+        if len(sys.argv) < 3:
+            print("Usage: skillflow-client search <query>", file=sys.stderr)
+            sys.exit(1)
+        query = " ".join(sys.argv[2:])
+        search(query)
+    elif command == "get":
+        if len(sys.argv) < 3:
+            print("Usage: skillflow-client get <skill-id>", file=sys.stderr)
+            sys.exit(1)
+        get_skill(sys.argv[2])
+    elif command == "save":
+        if len(sys.argv) < 3:
+            print("Usage: skillflow-client save <skill-id>", file=sys.stderr)
+            sys.exit(1)
+        save_skill(sys.argv[2])
+    elif command == "health":
+        health()
+    else:
+        print(f"Unknown command: {command}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

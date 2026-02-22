@@ -1,0 +1,72 @@
+# SkillFlow - Dynamic Skill Discovery
+
+You have access to SkillFlow, a system that provides expert guidance for specialized tasks.
+
+## IMPORTANT: Use SkillFlow Proactively
+
+**You MUST search for skills in these situations:**
+1. When starting a new task - search BEFORE attempting any solution
+2. When your approach isn't working or taking too long
+3. When the task involves specialized domains (image processing, cryptography, ML, etc.)
+4. When in doubt about the best approach - **always search first**
+
+## Commands
+
+### Search for skills
+```bash
+skillflow-client search "<description of task and skill that may be useful>"
+```
+
+**How to write effective queries:**
+- Describe what you're trying to accomplish
+- Mention the domain or technology involved
+- Specify what kind of help you need
+
+**Good query examples:**
+- "Analyzing a chess board image to detect piece positions and find winning moves"
+- "Implementing pipeline parallelism in PyTorch for distributed training"
+- "Recovering data from a corrupted SQLite database with WAL"
+- "Extracting code from a screenshot image using OCR"
+
+**Bad query examples:**
+- "chess" (too vague)
+- "help" (not descriptive)
+- "python code" (no task context)
+
+### View skill content
+```bash
+skillflow-client get <skill-id>
+```
+This displays the full skill content so you can review it.
+
+### Save skill for reference
+```bash
+skillflow-client save <skill-id>
+```
+This saves the skill to `.skills/<skill-id>/SKILL.md` for future reference.
+
+### Adapt and update skills
+After saving a skill, you can directly edit `.skills/<skill-id>/SKILL.md` using standard tools:
+
+**Add task-specific adaptations:**
+```bash
+echo -e "\n## Task-Specific Adaptations\n\nYour notes here..." >> .skills/<skill-id>/SKILL.md
+```
+
+**Document lessons learned after completing a task:**
+```bash
+echo -e "\n## Lessons Learned\n\n- Tip: what worked\n- Pitfall: what to avoid" >> .skills/<skill-id>/SKILL.md
+```
+
+You can also use `cat`, editors, or any file manipulation to modify the skill content as needed.
+
+## Workflow
+
+1. **Read the task** - understand what needs to be done
+2. **Search SkillFlow** - query with task description before coding
+3. **Get relevant skills** - use `get` to view content and evaluate relevance
+4. **Save useful skills** - use `save` if the skill is relevant
+5. **Adapt if needed** - edit the saved file to tailor to your task
+6. **Apply the guidance** - follow the skill's recommended approach
+7. **Document learnings** - append tips, pitfalls, or corrections to the skill
+8. **If stuck later** - search again with more specific queries

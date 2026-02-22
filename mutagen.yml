@@ -1,0 +1,23 @@
+sync:
+  defaults:
+    mode: "one-way-replica"
+    ignore:
+      paths:
+        - ".claude"
+        - "CLAUDE.md"
+        - "_bmad"
+        - "_bmad-output"
+        - ".git"
+        - "__pycache__"
+        - "*.pyc"
+        - ".mypy_cache"
+        - ".ruff_cache"
+        - ".venv"
+        - ".coverage"
+        - ".env"
+        - "outputs/"
+        - "integration/"
+        - ".pytest_cache"
+  server:
+    alpha: "."
+    beta: "aifshpc1.ddns.net:~/workspaces/SkillFlow/skill-flow"

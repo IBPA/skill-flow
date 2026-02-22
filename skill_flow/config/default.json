@@ -1,0 +1,32 @@
+{
+  "system": {},
+  "index": {
+    "input_corpus_path": "../skill-crawler/data/skills/",
+    "output_index_path": "outputs/indices/"
+  },
+  "models": {
+    "retriever": {
+      "model_name": "BAAI/bge-base-en-v1.5",
+      "top_k": 1000
+    },
+    "reranker": {
+      "enabled": true,
+      "model_name": "BAAI/bge-reranker-v2-m3",
+      "top_k": 100,
+      "batch_size": 128,
+      "max_content_chars": 512
+    },
+    "reranker2": {
+      "enabled": true,
+      "model_name": "BAAI/bge-reranker-v2-m3",
+      "top_k": 10,
+      "batch_size": 32,
+      "max_content_chars": 32000
+    },
+    "selector": {
+      "enabled": true,
+      "model": "gpt-4o-mini",
+      "top_k": 5
+    }
+  }
+}

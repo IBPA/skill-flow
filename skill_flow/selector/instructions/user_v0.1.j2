@@ -1,0 +1,8 @@
+## Task
+{{ query }}
+
+## Candidate Skills
+{% for candidate in candidates %}
+### Candidate {{ loop.index }}
+{{ candidate.content or candidate.description }}
+{% endfor %}

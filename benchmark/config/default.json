@@ -1,0 +1,31 @@
+{
+  "jobs_dir": "outputs/evaluation",
+  "model": "openai/gpt-5-nano-2025-08-07",
+  "reasoning_effort": "high",
+  "dataset": "terminal-bench@2.0",
+  "num_runs": 1,
+  "environment": {
+    "use_daytona": true,
+    "n_concurrent": 20
+  },
+  "tasks": {
+    "include_tasks": [],
+    "exclude_tasks": ["train-fasttext"]
+  },
+  "retry": {
+    "resume": false,
+    "retry_errors": false,
+    "retry_tasks": [],
+    "retry_error_types": [
+      "AgentSetupTimeoutError",
+      "CancelledError",
+      "EnvironmentStartTimeoutError",
+      "RewardFileNotFoundError",
+      "VerifierTimeoutError",
+      "RuntimeError",
+      "DaytonaError",
+      "DaytonaNotFoundError",
+      "AddTestsDirError"
+    ]
+  }
+}

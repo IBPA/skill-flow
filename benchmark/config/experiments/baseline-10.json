@@ -1,0 +1,42 @@
+{
+  "job_name": "baseline-mini-10",
+  "jobs_dir": "outputs/evaluation",
+  "model": "openai/gpt-5-mini-2025-08-07",
+  "reasoning_effort": "high",
+  "tasks_path": "integration/skillsbench/tasks-no-skills",
+  "num_runs": 1,
+  "environment": {
+    "use_daytona": true,
+    "n_concurrent": 10
+  },
+  "tasks": {
+    "include_tasks": [
+      "sales-pivot-analysis",
+      "mario-coin-counting",
+      "flood-risk-analysis",
+      "protein-expression-analysis",
+      "sec-financial-report",
+      "offer-letter-generator",
+      "earthquake-plate-calculation",
+      "manufacturing-fjsp-optimization",
+      "dapt-intrusion-detection",
+      "software-dependency-audit"
+    ],
+    "exclude_tasks": []
+  },
+  "retry": {
+    "resume": false,
+    "retry_errors": false,
+    "retry_tasks": [],
+    "retry_error_types": [
+      "AgentSetupTimeoutError",
+      "CancelledError",
+      "EnvironmentStartTimeoutError",
+      "RewardFileNotFoundError",
+      "VerifierTimeoutError",
+      "RuntimeError",
+      "DaytonaNotFoundError",
+      "AddTestsDirError"
+    ]
+  }
+}
