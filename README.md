@@ -125,5 +125,5 @@ uv run mypy skill_flow/
 ## Requirements
 
 - Python 3.12+
-- CUDA GPU recommended for index building (CPU works but slower)
+- CUDA GPU recommended for index building (CPU works but can be slower)
 - Corpus data in `../skill-crawler/data/skills/`
