@@ -1,0 +1,31 @@
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llrl}
+  \toprule
+  \textbf{Stage} & \textbf{Skill} & \textbf{Score} & \textbf{GT?} \\
+  \midrule
+  Stage 1: Dense Retriever & \texttt{pdf-extractor-1} & 0.811 &  \\
+   & \texttt{pdfco} & 0.766 &  \\
+   & \texttt{llmwhisperer} & 0.748 &  \\
+   & \texttt{pandas-best-practices} & 0.746 &  \\
+   & \texttt{processing-data} & 0.745 &  \\
+  \midrule
+  Stage 2: Cross-Encoder & \texttt{fuzzy-matching} & 3.743 &  \\
+   & \texttt{transaction-classification-debugger} & 1.156 &  \\
+   & \texttt{fuzzy-match} & 0.025 & \checkmark \\
+   & \texttt{fuzzy-match} & 0.025 &  \\
+   & \texttt{nucleo-matcher} & -1.767 &  \\
+  \midrule
+  Stage 3: Deep Reranker & \texttt{fuzzy-matching} & 0.911 &  \\
+   & \texttt{fuzzy-match} & 0.829 & \checkmark \\
+   & \texttt{fuzzy-match} & 0.829 &  \\
+   & \texttt{transaction-classification-debugger} & 0.600 &  \\
+   & \texttt{nucleo-matcher} & 0.285 &  \\
+  \midrule
+  Stage 4: LLM Selector & \texttt{fuzzy-matching} & relevant &  \\
+   & \texttt{fuzzy-match} & filtered & \checkmark \\
+   & \texttt{fuzzy-match} & filtered &  \\
+   & \texttt{transaction-classification-debugger} & filtered &  \\
+   & \texttt{nucleo-matcher} & filtered &  \\
+  \bottomrule
+\end{tabular}%
+}

@@ -1,0 +1,33 @@
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llll}
+  \toprule
+  \textbf{Benchmark} & \textbf{Task} & \textbf{Category} & \textbf{Reason} \\
+  \midrule
+  SkillsBench & earthquake-phase-association   & Infrastructure & Daytona sandbox error \\
+  SkillsBench & fix-druid-loophole-cve         & Infrastructure & Daytona sandbox error \\
+  SkillsBench & fix-erlang-ssh-cve             & Infrastructure & Daytona sandbox error \\
+  SkillsBench & latex-formula-extraction       & Infrastructure & Daytona sandbox error \\
+  SkillsBench & organize-messy-files           & Infrastructure & Daytona sandbox error \\
+  SkillsBench & parallel-tfidf-search          & Infrastructure & Daytona sandbox error \\
+  SkillsBench & quantum-numerical-simulation   & Infrastructure & Daytona sandbox error \\
+  SkillsBench & setup-fuzzing-py               & Infrastructure & Daytona sandbox error \\
+  SkillsBench & shock-analysis-demand          & Infrastructure & Daytona sandbox error \\
+  SkillsBench & syzkaller-ppdev-syzlang        & Infrastructure & Daytona sandbox error \\
+  SkillsBench & taxonomy-tree-merge            & Infrastructure & Daytona sandbox error \\
+  SkillsBench & video-filler-word-remover      & Infrastructure & Daytona sandbox error \\
+  SkillsBench & video-tutorial-indexer         & Infrastructure & Daytona sandbox error \\
+  SkillsBench & multilingual-video-dubbing     & Infrastructure & TTS model download fails intermittently during Docker build \\
+  SkillsBench & scheduling-email-assistant     & Infrastructure & Docker compose mounts hardcoded host path \\
+  SkillsBench & speaker-diarization-subtitles  & Infrastructure & Whisper model loading triggers OOM during Docker build \\
+  \midrule
+  SkillsBench & dynamic-object-aware-egomotion  & Reproducibility & Oracle outputs non-serializable numpy types \\
+  SkillsBench & fix-build-google-auto           & Reproducibility & Maven build flaky under Docker networking \\
+  SkillsBench & pedestrian-traffic-counting     & Reproducibility & Oracle depends on external vision API keys \\
+  SkillsBench & r2r-mpc-control                 & Reproducibility & MPC settling time sensitive to Docker CPU scheduling \\
+  SkillsBench & reserves-at-risk-calc           & Reproducibility & Numerical precision varies across platforms \\
+  SkillsBench & simpo-code-reproduction        & Reproducibility & Build timeout; passes with extended timeout \\
+  \midrule
+  Terminal-Bench & train-fasttext               & Resource      & Large corpus download and model training \\
+  \bottomrule
+\end{tabular}%
+}

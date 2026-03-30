@@ -1,0 +1,59 @@
+{
+  "jobs_dir": "outputs/evaluation",
+  "model": "openai/gpt-5-mini-2025-08-07",
+  "reasoning_effort": "medium",
+  "tasks_path": "integration/skillsbench/tasks-no-skills",
+  "skills": {
+    "skills_dir": "outputs/vercel-skills/vercel-skillsbench-top1",
+    "match_skill_to_task": true
+  },
+  "num_runs": 1,
+  "environment": {
+    "use_daytona": true,
+    "n_concurrent": 30
+  },
+  "tasks": {
+    "include_tasks": [],
+    "exclude_tasks": [
+      "fix-druid-loophole-cve",
+      "latex-formula-extraction",
+      "setup-fuzzing-py",
+      "taxonomy-tree-merge",
+      "video-filler-word-remover",
+      "quantum-numerical-simulation",
+      "fix-erlang-ssh-cve",
+      "parallel-tfidf-search",
+      "earthquake-phase-association",
+      "video-tutorial-indexer",
+      "organize-messy-files",
+      "shock-analysis-demand",
+      "syzkaller-ppdev-syzlang",
+
+      "dynamic-object-aware-egomotion",
+      "fix-build-google-auto",
+      "reserves-at-risk-calc",
+      "simpo-code-reproduction",
+      "r2r-mpc-control",
+      "pedestrian-traffic-counting",
+
+      "multilingual-video-dubbing",
+      "speaker-diarization-subtitles",
+      "scheduling-email-assistant"
+    ]
+  },
+  "retry": {
+    "resume": false,
+    "retry_errors": false,
+    "retry_tasks": [],
+    "retry_error_types": [
+      "AgentSetupTimeoutError",
+      "CancelledError",
+      "EnvironmentStartTimeoutError",
+      "RewardFileNotFoundError",
+      "VerifierTimeoutError",
+      "RuntimeError",
+      "DaytonaNotFoundError",
+      "AddTestsDirError"
+    ]
+  }
+}

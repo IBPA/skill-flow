@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from skill_flow.eval.ground_truth import (
+from skill_flow.eval.utils.ground_truth import (
     _parse_frontmatter,
     load_corpus_keys,
     load_ground_truth,

@@ -1,0 +1,61 @@
+{
+  "name": "retriever-comparison",
+  "tasks_dir": "integration/skillsbench/tasks",
+  "output_dir": "outputs/experiments/latency/latency-retriever-comparison/",
+  "corpus_path": "data/skills/",
+  "max_tasks": 5,
+  "retrievers": [
+    {
+      "enabled": true,
+      "retriever_type": "dense",
+      "model_name": "BAAI/bge-base-en-v1.5",
+      "query_prompt": "Represent this sentence for searching relevant passages: ",
+      "index_dir": "outputs/indices/bge-base/",
+      "top_k": 1000
+    },
+    {
+      "enabled": true,
+      "retriever_type": "dense",
+      "model_name": "BAAI/bge-base-en-v1.5",
+      "query_prompt": "Represent this sentence for searching relevant passages: ",
+      "index_dir": "outputs/indices/bge-base-content/",
+      "top_k": 1000,
+      "max_content_tokens": 512
+    },
+    {
+      "enabled": true,
+      "retriever_type": "dense",
+      "model_name": "intfloat/e5-base-v2",
+      "query_prompt": "query: ",
+      "doc_prompt": "passage: ",
+      "index_dir": "outputs/indices/e5-base/",
+      "top_k": 1000
+    },
+    {
+      "enabled": true,
+      "retriever_type": "dense",
+      "model_name": "BAAI/bge-m3",
+      "query_prompt": "",
+      "doc_prompt": "",
+      "index_dir": "outputs/indices/bge-m3/",
+      "top_k": 1000
+    },
+    {
+      "retriever_type": "dense",
+      "model_name": "BAAI/bge-m3",
+      "query_prompt": "",
+      "doc_prompt": "",
+      "index_dir": "outputs/indices/bge-m3-content/",
+      "top_k": 1000,
+      "max_content_tokens": 512,
+      "enabled": true
+    },
+    {
+      "enabled": true,
+      "retriever_type": "bm25",
+      "model_name": "bm25",
+      "index_dir": "outputs/indices/bge-base/",
+      "top_k": 1000
+    }
+  ]
+}

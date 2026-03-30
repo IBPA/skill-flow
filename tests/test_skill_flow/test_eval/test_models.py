@@ -1,6 +1,5 @@
 """Tests for src.eval.models."""
 
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -8,12 +7,9 @@ from pydantic import BaseModel, ValidationError
 from skill_flow.eval.models import (
     EVAL_KS,
     EvalReport,
-    EvalRunConfig,
     EvalSummary,
     InjectedSkill,
-    Reranker2EvalConfig,
     RetrievedSkill,
-    SelectorEvalConfig,
     TaskGroundTruth,
     TaskResult,
     filter_ks,
@@ -33,30 +29,11 @@ class TestFilterKs:
     def test_returns_all_when_top_k_large(self):
         assert filter_ks(1000) == EVAL_KS
 
-    def test_returns_empty_for_zero(self):
-        assert filter_ks(0) == []
+    def test_returns_all_for_zero(self):
+        assert filter_ks(0) == EVAL_KS
 
     def test_returns_subset(self):
         assert filter_ks(5) == [1, 2, 5]
-
-
-class TestEvalRunConfig:
-    def test_defaults(self):
-        cfg = EvalRunConfig(tasks_dir=Path("/tasks"))
-        assert cfg.tasks_dir == Path("/tasks")
-        assert cfg.index_dir == Path("outputs/indices/")
-        assert cfg.max_query_chars == 0
-        assert cfg.output_path is None
-
-    def test_custom_values(self):
-        cfg = EvalRunConfig(
-            tasks_dir=Path("/t"),
-            index_dir=Path("/idx"),
-            max_query_chars=500,
-            output_path=Path("/out.json"),
-        )
-        assert cfg.max_query_chars == 500
-        assert cfg.output_path == Path("/out.json")
 
 
 class TestInjectedSkill:
@@ -155,7 +132,22 @@ class TestTaskResult:
             reciprocal_rank=0.0,
         )
         assert tr.query == ""
+        assert tr.retrieval_query == ""
+        assert tr.rerank_query == ""
         assert tr.retrieved_skills == []
+
+    def test_retrieval_query(self):
+        tr = TaskResult(
+            task_id="t",
+            query="original",
+            retrieval_query="concise search query",
+            num_ground_truth=1,
+            num_injected=0,
+            recall_at={},
+            hit_at={},
+            reciprocal_rank=0.0,
+        )
+        assert tr.retrieval_query == "concise search query"
 
     def test_frozen(self):
         tr = TaskResult(
@@ -199,48 +191,6 @@ class TestEvalSummary:
         _assert_frozen(es, "mrr", 1.0)
 
 
-class TestReranker2EvalConfig:
-    def test_defaults(self):
-        cfg = Reranker2EvalConfig(
-            stage2_report_path=Path("/stage2.json"), tasks_dir=Path("/tasks")
-        )
-        assert cfg.stage2_report_path == Path("/stage2.json")
-        assert cfg.tasks_dir == Path("/tasks")
-        assert cfg.index_dir == Path("outputs/indices/")
-        assert cfg.max_tasks == 0
-        assert cfg.output_path is None
-
-    def test_custom_values(self):
-        cfg = Reranker2EvalConfig(
-            stage2_report_path=Path("/s2.json"),
-            tasks_dir=Path("/t"),
-            index_dir=Path("/idx"),
-            output_path=Path("/out.json"),
-        )
-        assert cfg.output_path == Path("/out.json")
-
-
-class TestSelectorEvalConfig:
-    def test_defaults(self):
-        cfg = SelectorEvalConfig(
-            stage3_report_path=Path("/stage3.json"), tasks_dir=Path("/tasks")
-        )
-        assert cfg.stage3_report_path == Path("/stage3.json")
-        assert cfg.tasks_dir == Path("/tasks")
-        assert cfg.index_dir == Path("outputs/indices/")
-        assert cfg.max_tasks == 0
-        assert cfg.output_path is None
-
-    def test_custom_values(self):
-        cfg = SelectorEvalConfig(
-            stage3_report_path=Path("/s3.json"),
-            tasks_dir=Path("/t"),
-            index_dir=Path("/idx"),
-            output_path=Path("/out.json"),
-        )
-        assert cfg.output_path == Path("/out.json")
-
-
 class TestEvalReport:
     def test_creation(self):
         summary = EvalSummary(
@@ -253,7 +203,21 @@ class TestEvalReport:
             mean_hit_at={10: 1.0},
             mrr=1.0,
         )
-        cfg = EvalRunConfig(tasks_dir=Path("/t"))
+        cfg: dict[str, object] = {"tasks_dir": "/t"}
         report = EvalReport(summary=summary, task_results=[], config=cfg)
         assert report.summary.mrr == 1.0
         assert report.task_results == []
+
+    def test_creation_with_empty_config(self):
+        summary = EvalSummary(
+            num_tasks_total=1,
+            num_tasks_evaluated=1,
+            num_tasks_no_skills=0,
+            num_skills_injected=0,
+            mean_recall_at={},
+            mean_precision_at={},
+            mean_hit_at={},
+            mrr=0.0,
+        )
+        report = EvalReport(summary=summary, task_results=[])
+        assert report.config == {}

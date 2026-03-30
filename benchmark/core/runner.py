@@ -23,18 +23,21 @@ from benchmark.core.utils import (
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from pathlib import Path
 
 
 class EvaluationRunner:
     """Runner for Harbor benchmark evaluations."""
 
-    def __init__(self, config: EvalConfig) -> None:
+    def __init__(self, config: EvalConfig, config_path: Path | None = None) -> None:
         """Initialize the runner.
 
         Args:
             config: Evaluation configuration
+            config_path: Path to config file (used for job name derivation)
         """
         self.config = config
+        self.config_path = config_path
         self.project_root = get_project_root()
 
     def run(self) -> int:
@@ -118,24 +121,27 @@ class EvaluationRunner:
         return 0
 
     def _generate_job_prefix(self) -> str:
-        """Generate job name prefix based on config."""
+        """Generate job name prefix based on config.
+
+        Uses the config file stem (e.g. "skillsbench-inject" from
+        "skillsbench-inject.json") when available, falling back to
+        mode-based naming.
+        """
         bp = _get_benchmark_prefix(self.config)
 
-        if self.config.mode == EvalMode.BASELINE:
+        if self.config_path is not None:
+            config_stem = self.config_path.stem
+            prefix = f"{bp}-{config_stem}"
+        elif self.config.mode == EvalMode.BASELINE:
             prefix = f"{bp}-baseline"
         elif self.config.mode == EvalMode.MCP:
             prefix = f"{bp}-mcp"
-        elif self.config.mode == EvalMode.SKILLFLOW:
-            prefix = f"{bp}-skillflow"
-        elif self.config.mode == EvalMode.SKILLFLOW_EVAL:
-            prefix = f"{bp}-skillflow-eval"
+        elif self.config.mode == EvalMode.SKILLFLOW_INJECTION:
+            prefix = f"{bp}-skillflow-injection"
         else:
             # Skills mode
             assert self.config.skills
-            if self.config.skills.skill_list_name:
-                skill_part = self.config.skills.skill_list_name
-            else:
-                skill_part = self.config.skills.skills_dir.name
+            skill_part = self.config.skills.skills_dir.name
             prefix = f"{bp}-{skill_part}"
 
             if self.config.skills.match_skill_to_task:

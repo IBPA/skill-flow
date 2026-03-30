@@ -1,0 +1,20 @@
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{rcccc}
+  \toprule
+  \textbf{Condition} & \textbf{Mean Skills Retrieved/Task} & \textbf{Tasks Retrieved (\%)} & \textbf{Oracle Skills Retrieved (\%)} & \textbf{Tasks Used (\%)} \\
+  \midrule
+  \multicolumn{5}{l}{\textit{SkillsBench}} \\
+  \midrule
+  \textit{Oracle}          & \textit{2.5} & \textit{100.0{\scriptsize~[100.0, 100.0]}} & \textit{100.0{\scriptsize~[100.0, 100.0]}} & \textit{69.2{\scriptsize~[62.6, 75.9]}} \\
+  Vercel                   & 0.9  & 87.5{\scriptsize~[82.8, 92.2]} & ---   & 40.6{\scriptsize~[33.9, 47.9]} \\
+  SkillFlow top-1 (Ours)   & 0.9  & 91.7{\scriptsize~[87.5, 95.3]} & 37.6{\scriptsize~[32.4, 43.0]} & \textbf{68.8}$^{**}${\scriptsize~[62.5, 75.0]} \\
+  SkillFlow (Ours)         & 2.8  & \textbf{92.2}{\scriptsize~[88.0, 95.8]} & \textbf{61.8}{\scriptsize~[56.5, 66.9]} & \textbf{68.8}$^{**}${\scriptsize~[62.0, 75.0]} \\
+  \midrule
+  \multicolumn{5}{l}{\textit{Terminal-Bench}} \\
+  \midrule
+  Vercel                   & 0.9  & \textbf{90.9}{\scriptsize~[87.1, 94.3]} & ---   & 22.3{\scriptsize~[17.4, 27.7]} \\
+  SkillFlow top-1 (Ours)   & 0.9  & 89.8{\scriptsize~[86.0, 93.2]} & ---   & \textbf{72.7}$^{**}${\scriptsize~[67.4, 78.0]} \\
+  SkillFlow (Ours)         & 1.5  & 87.5{\scriptsize~[83.3, 91.3]} & ---   & 70.1$^{**}${\scriptsize~[64.4, 75.4]} \\
+  \bottomrule
+\end{tabular}%
+}

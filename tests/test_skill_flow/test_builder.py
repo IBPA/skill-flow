@@ -26,12 +26,15 @@ def _make_skills(n: int) -> list[SkillRecord]:
     ]
 
 
-def _make_mock_encoder(n: int) -> MagicMock:
+def _make_mock_encoder(n: int, max_seq_length: int = 512) -> MagicMock:
     """Return a mock encoder that produces normalized random embeddings."""
     encoder = MagicMock()
     vecs = RNG.random((n, DIM)).astype(np.float32)
     norms = np.linalg.norm(vecs, axis=1, keepdims=True)
     encoder.encode_documents.return_value = vecs / norms
+    encoder.max_seq_length = max_seq_length
+    # truncate_text: simulate token ≈ 4 chars
+    encoder.truncate_text.side_effect = lambda text, n: text[: n * 4]
     return encoder
 
 
@@ -117,3 +120,78 @@ def test_no_skill_contents_without_corpus_path(index_artifacts):
     """Without corpus_path, skill_contents.json is not created."""
     output_dir, _, _ = index_artifacts
     assert not (output_dir / "skill_contents.json").exists()
+
+
+def test_max_content_tokens_positive_encodes_with_content(tmp_path):
+    """When max_content_tokens > 0, encoder receives description + content."""
+    corpus = tmp_path / "corpus"
+    output = tmp_path / "index"
+
+    skills = _make_skills(2)
+    for s in skills:
+        skill_dir = corpus / s.local_path
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(f"# Full content for {s.name}")
+
+    encoder = _make_mock_encoder(2)
+    build_index(
+        skills,
+        encoder,
+        output,
+        corpus_path=corpus,
+        max_content_tokens=500,
+    )
+
+    assert encoder.truncate_text.call_count == 2
+    for call_args_item in encoder.truncate_text.call_args_list:
+        text, token_limit = call_args_item.args
+        assert "\n# Full content for" in text
+        assert token_limit == 500
+
+
+def test_max_content_tokens_negative_one_uses_model_limit(tmp_path):
+    """max_content_tokens=-1 fills to the model's max_seq_length."""
+    corpus = tmp_path / "corpus"
+    output = tmp_path / "index"
+
+    skills = _make_skills(1)
+    skill_dir = corpus / skills[0].local_path
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text("x" * 100)
+
+    encoder = _make_mock_encoder(1, max_seq_length=256)
+    build_index(
+        skills,
+        encoder,
+        output,
+        corpus_path=corpus,
+        max_content_tokens=-1,
+    )
+
+    _, token_limit = encoder.truncate_text.call_args.args
+    assert token_limit == 256
+
+
+def test_max_content_tokens_zero_uses_descriptions_only(tmp_path):
+    """max_content_tokens=0 (default) encodes descriptions only."""
+    corpus = tmp_path / "corpus"
+    output = tmp_path / "index"
+
+    skills = _make_skills(2)
+    for s in skills:
+        skill_dir = corpus / s.local_path
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text("should not appear")
+
+    encoder = _make_mock_encoder(2)
+    build_index(
+        skills,
+        encoder,
+        output,
+        corpus_path=corpus,
+        max_content_tokens=0,
+    )
+
+    call_args = encoder.encode_documents.call_args[0][0]
+    assert call_args == [s.description for s in skills]
+    encoder.truncate_text.assert_not_called()

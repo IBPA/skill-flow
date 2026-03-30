@@ -28,7 +28,11 @@ def cmd_run(args: argparse.Namespace) -> int:
     if args.job_name:
         config = config.model_copy(update={"job_name": args.job_name})
 
-    runner = EvaluationRunner(config)
+    if args.resume:
+        retry = config.retry.model_copy(update={"resume": True})
+        config = config.model_copy(update={"retry": retry})
+
+    runner = EvaluationRunner(config, config_path=config_path)
 
     if config.num_runs > 1:
         return runner.run_multiple()
@@ -59,6 +63,11 @@ def create_parser() -> argparse.ArgumentParser:
         "--job-name",
         type=str,
         help="Job name prefix (timestamp will be auto-appended)",
+    )
+    run_parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume a previous job (requires --job-name)",
     )
 
     return parser

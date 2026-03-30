@@ -1,13 +1,11 @@
 """Custom Harbor agents for evaluation."""
 
-from benchmark.agents.codex_with_skillflow import CodexWithSkillFlow
-from benchmark.agents.mcp_test_agent import McpTestAgent
-from benchmark.agents.skill_agent import SkillAgent
-from benchmark.agents.skillflow_eval_agent import SkillFlowEvalAgent
+from benchmark.agents.skillflow_injection_agent import SkillFlowInjectionAgent
+from benchmark.agents.skillflow_mcp_agent import SkillFlowMCPAgent
+from benchmark.agents.skillflow_mcp_cached_agent import SkillFlowMCPCachedAgent
 
 __all__ = [
-    "CodexWithSkillFlow",
-    "McpTestAgent",
-    "SkillAgent",
-    "SkillFlowEvalAgent",
+    "SkillFlowInjectionAgent",
+    "SkillFlowMCPAgent",
+    "SkillFlowMCPCachedAgent",
 ]

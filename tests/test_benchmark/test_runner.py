@@ -3,7 +3,6 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 from benchmark.core.commands import (
     build_harbor_run_command,
     build_mode_args,
@@ -22,43 +21,6 @@ from benchmark.core.display import print_config, print_multi_config
 from benchmark.core.runner import EvaluationRunner
 
 
-@pytest.fixture
-def base_skills_config() -> SkillsConfig:
-    """Create a base skills config for testing."""
-    return SkillsConfig(
-        skills_dir=Path("outputs/skills/downloaded"),
-        skill_list_name=None,
-        match_skill_to_task=False,
-        skillflow_peer_url="http://172.17.0.1:8765",
-    )
-
-
-@pytest.fixture
-def base_env_config() -> EnvironmentConfig:
-    """Create a base environment config for testing."""
-    return EnvironmentConfig(use_daytona=False, n_concurrent=6)
-
-
-@pytest.fixture
-def base_task_config() -> TaskConfig:
-    """Create a base task config for testing."""
-    return TaskConfig(
-        include_tasks=[],
-        exclude_tasks=["train-fasttext"],
-    )
-
-
-@pytest.fixture
-def base_retry_config() -> RetryConfig:
-    """Create a base retry config for testing."""
-    return RetryConfig(
-        resume=False,
-        retry_errors=False,
-        retry_tasks=[],
-        retry_error_types=["CancelledError"],
-    )
-
-
 def make_config(
     job_name: str | None = None,
     jobs_dir: Path | None = None,
@@ -69,6 +31,12 @@ def make_config(
     num_runs: int = 1,
     dataset: str | None = "terminal-bench@2.0",
     tasks_path: Path | None = None,
+    mcp_url: str | None = None,
+    cached_skillflow: bool = False,
+    selector_cache: Path | None = None,
+    eval_results: Path | None = None,
+    tasks_dir_for_skills: Path | None = None,
+    corpus_dir: Path | None = None,
 ) -> EvalConfig:
     """Helper to create EvalConfig with defaults."""
     return EvalConfig(
@@ -78,6 +46,12 @@ def make_config(
         dataset=dataset,
         tasks_path=tasks_path,
         num_runs=num_runs,
+        mcp_url=mcp_url,
+        cached_skillflow=cached_skillflow,
+        selector_cache=selector_cache,
+        eval_results=eval_results,
+        tasks_dir_for_skills=tasks_dir_for_skills,
+        corpus_dir=corpus_dir,
         skills=skills,
         environment=environment or EnvironmentConfig(use_daytona=False, n_concurrent=6),
         tasks=tasks
@@ -122,32 +96,7 @@ class TestEvaluationRunner:
         cmd = mock_execute.call_args[0][0]
         assert "harbor" in cmd
         assert "--agent-import-path" in cmd
-        assert "SkillAgent" in " ".join(cmd)
-
-    @patch("benchmark.core.runner.EvaluationRunner._execute_command")
-    @patch("benchmark.core.display.print_config")
-    def test_run_new_skillflow(
-        self, mock_print: MagicMock, mock_execute: MagicMock
-    ) -> None:
-        """Test running a new skillflow evaluation."""
-        mock_execute.return_value = 0
-
-        config = make_config(
-            job_name="test-skillflow",
-            skills=SkillsConfig(
-                skills_dir=Path("outputs/skills/downloaded"),
-                skill_list_name=None,
-                match_skill_to_task=False,
-                skillflow_peer_url="http://172.17.0.1:8765",
-            ),
-        )
-        runner = EvaluationRunner(config)
-        result = runner.run()
-
-        assert result == 0
-        cmd = mock_execute.call_args[0][0]
-        assert "--agent-import-path" in cmd
-        assert "CodexWithSkillFlow" in " ".join(cmd)
+        assert "SkillFlowInjectionAgent" in " ".join(cmd)
 
     @patch("benchmark.core.runner.EvaluationRunner._execute_command")
     @patch("benchmark.core.display.print_config")
@@ -172,7 +121,7 @@ class TestEvaluationRunner:
         assert result == 0
         cmd = mock_execute.call_args[0][0]
         assert "--agent-import-path" in cmd
-        assert "SkillAgent" in " ".join(cmd)
+        assert "SkillFlowInjectionAgent" in " ".join(cmd)
 
     @patch("benchmark.core.display.print_config")
     def test_run_resume_missing_dir(
@@ -345,21 +294,6 @@ class TestEvaluationRunner:
 
         assert prefix == "tb-baseline-gpt5mini"
 
-    def test_generate_job_prefix_skillflow(self) -> None:
-        """Test generating job prefix for skillflow mode."""
-        config = make_config(
-            skills=SkillsConfig(
-                skills_dir=Path("outputs/skills/downloaded"),
-                skill_list_name=None,
-                match_skill_to_task=False,
-                skillflow_peer_url="http://172.17.0.1:8765",
-            ),
-        )
-        runner = EvaluationRunner(config)
-        prefix = runner._generate_job_prefix()
-
-        assert prefix == "tb-skillflow-gpt5mini"
-
     def test_generate_job_prefix_skills_with_options(self, tmp_path: Path) -> None:
         """Test job prefix with skill options."""
         skills_dir = tmp_path / "my_skills"
@@ -514,6 +448,66 @@ class TestBuildCommands:
 
         assert "match_skill_to_task=True" in " ".join(args)
 
+    def test_build_mode_args_skillflow_injection_eval_results(self) -> None:
+        """Test building mode args for SkillFlow injection from eval results."""
+        config = make_config(
+            eval_results=Path("outputs/eval-results.json"),
+            tasks_dir_for_skills=Path("integration/skillsbench/tasks"),
+            corpus_dir=Path("data/skills"),
+        )
+        args = build_mode_args(config)
+
+        joined = " ".join(args)
+        assert "skillflow_injection_agent:SkillFlowInjectionAgent" in joined
+        assert "eval_results=outputs/eval-results.json" in joined
+        assert "tasks_dir=integration/skillsbench/tasks" in joined
+        assert "corpus_dir=data/skills" in joined
+
+    def test_build_mode_args_skillflow_injection_selector_cache(self) -> None:
+        """Test building mode args for SkillFlow injection from selector cache."""
+        config = make_config(
+            selector_cache=Path("outputs/cache.json"),
+            tasks_dir_for_skills=Path("integration/skillsbench/tasks"),
+        )
+        args = build_mode_args(config)
+
+        joined = " ".join(args)
+        assert "skillflow_injection_agent:SkillFlowInjectionAgent" in joined
+        assert "selector_cache=outputs/cache.json" in joined
+        assert "tasks_dir=integration/skillsbench/tasks" in joined
+
+    def test_build_mode_args_skillflow_injection_no_tasks_dir(self) -> None:
+        """Test injection mode works without tasks_dir_for_skills."""
+        config = make_config(
+            selector_cache=Path("outputs/batch/terminal-bench/selector_cache.json"),
+            corpus_dir=Path("data/skills"),
+        )
+        args = build_mode_args(config)
+
+        joined = " ".join(args)
+        assert "SkillFlowInjectionAgent" in joined
+        assert (
+            "selector_cache=outputs/batch/terminal-bench/selector_cache.json" in joined
+        )
+        assert "corpus_dir=data/skills" in joined
+        assert "tasks_dir=" not in joined
+
+    def test_build_mode_args_skillflow_cached(self, tmp_path: Path) -> None:
+        """Test building mode args for cached SkillFlow mode."""
+        cache_file = tmp_path / "cache.json"
+        cache_file.write_text("{}")
+        config = make_config(
+            mcp_url="https://x.ngrok-free.dev/mcp",
+            cached_skillflow=True,
+            selector_cache=cache_file,
+        )
+        args = build_mode_args(config)
+
+        joined = " ".join(args)
+        assert "skillflow_mcp_cached_agent:SkillFlowMCPCachedAgent" in joined
+        assert "mcp_url=https://x.ngrok-free.dev/mcp" in joined
+        assert f"selector_cache={cache_file}" in joined
+
     def test_build_resume_command(self, tmp_path: Path) -> None:
         """Test building resume command."""
         job_path = tmp_path / "test-job"
@@ -539,18 +533,6 @@ class TestDisplayFunctions:
     def test_print_config_baseline(self) -> None:
         """Test printing config for baseline mode."""
         config = make_config()
-        print_config(config, "test-job")
-
-    def test_print_config_skillflow(self) -> None:
-        """Test printing config for skillflow mode."""
-        config = make_config(
-            skills=SkillsConfig(
-                skills_dir=Path("outputs/skills/downloaded"),
-                skill_list_name=None,
-                match_skill_to_task=False,
-                skillflow_peer_url="http://172.17.0.1:8765",
-            ),
-        )
         print_config(config, "test-job")
 
     def test_print_config_skills(self, tmp_path: Path) -> None:

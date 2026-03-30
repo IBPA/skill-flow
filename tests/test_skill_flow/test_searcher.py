@@ -155,6 +155,22 @@ def test_missing_contents_file(index_dir):
     assert results[0].content == ""
 
 
+def test_augment_adds_vectors(index_dir):
+    dir_path, vecs, _keys = index_dir
+    encoder = _make_mock_encoder(vecs[0])
+    encoder.encode_documents = MagicMock(
+        return_value=np.random.default_rng(1).random((1, DIM)).astype(np.float32)
+    )
+    searcher = IndexSearcher(dir_path, encoder)
+
+    original_count = searcher._index.ntotal
+    searcher.augment(["new/skill"], ["new description"])
+
+    assert searcher._index.ntotal == original_count + 1
+    assert "new/skill" in searcher._skill_keys
+    encoder.encode_documents.assert_called_once_with(["new description"])
+
+
 def test_missing_descriptions_file(tmp_path):
     """Searcher works without skill_descriptions.json (backward compat)."""
     rng = np.random.default_rng(99)

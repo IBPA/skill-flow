@@ -1,0 +1,31 @@
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llrl}
+  \toprule
+  \textbf{Stage} & \textbf{Skill} & \textbf{Score} & \textbf{GT?} \\
+  \midrule
+  Stage 1: Dense Retriever & \texttt{matched-filtering} & 0.844 & \checkmark \\
+   & \texttt{conditioning} & 0.757 & \checkmark \\
+   & \texttt{gwosc} & 0.694 &  \\
+   & \texttt{scipy-best-practices} & 0.656 &  \\
+   & \texttt{tuning-hyperparameters} & 0.650 &  \\
+  \midrule
+  Stage 2: Cross-Encoder & \texttt{matched-filtering} & 7.510 & \checkmark \\
+   & \texttt{conditioning} & 4.322 & \checkmark \\
+   & \texttt{gwosc} & -4.145 &  \\
+   & \texttt{large-cell-ratio-matching} & -5.281 &  \\
+   & \texttt{detect-python-command} & -6.234 &  \\
+  \midrule
+  Stage 3: Deep Reranker & \texttt{matched-filtering} & 0.999 & \checkmark \\
+   & \texttt{conditioning} & 0.989 & \checkmark \\
+   & \texttt{gwosc} & 0.270 &  \\
+   & \texttt{bio-filter-sequences} & 0.156 &  \\
+   & \texttt{oe-keyword-audit} & 0.094 &  \\
+  \midrule
+  Stage 4: LLM Selector & \texttt{matched-filtering} & filtered & \checkmark \\
+   & \texttt{conditioning} & filtered & \checkmark \\
+   & \texttt{gwosc} & filtered &  \\
+   & \texttt{bio-filter-sequences} & filtered &  \\
+   & \texttt{oe-keyword-audit} & filtered &  \\
+  \bottomrule
+\end{tabular}%
+}

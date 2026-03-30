@@ -1,0 +1,31 @@
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llrl}
+  \toprule
+  \textbf{Stage} & \textbf{Skill} & \textbf{Score} & \textbf{GT?} \\
+  \midrule
+  Stage 1: Dense Retriever & \texttt{pdf-4} & 0.761 &  \\
+   & \texttt{python-pdf} & 0.754 &  \\
+   & \texttt{writing-tests-4} & 0.749 &  \\
+   & \texttt{fixture-table} & 0.745 &  \\
+   & \texttt{pdf-19} & 0.740 &  \\
+  \midrule
+  Stage 2: Cross-Encoder & \texttt{pdf} & -0.736 &  \\
+   & \texttt{pdf-33} & -0.736 &  \\
+   & \texttt{pdf-30} & -0.736 &  \\
+   & \texttt{pdf-28} & -0.736 &  \\
+   & \texttt{pdf-26} & -0.987 &  \\
+  \midrule
+  Stage 3: Deep Reranker & \texttt{python-pdf} & 0.706 &  \\
+   & \texttt{pdf-16} & 0.698 &  \\
+   & \texttt{pdf-20} & 0.687 &  \\
+   & \texttt{pdf-7} & 0.683 &  \\
+   & \texttt{pdf-21} & 0.683 &  \\
+  \midrule
+  Stage 4: LLM Selector & \texttt{python-pdf} & relevant &  \\
+   & \texttt{pdf-16} & filtered &  \\
+   & \texttt{pdf-20} & filtered &  \\
+   & \texttt{pdf-7} & filtered &  \\
+   & \texttt{pdf-21} & filtered &  \\
+  \bottomrule
+\end{tabular}%
+}

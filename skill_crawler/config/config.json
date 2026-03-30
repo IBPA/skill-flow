@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+
+  "crawler": {
+    "max_workers": 4,
+    "rate_limit_delay": 1.0,
+    "request_timeout": 30.0,
+    "max_repo_size_mb": 50.0
+  },
+
+  "storage": {
+    "data_dir": "./data",
+    "skills_dir": "./data/skills"
+  },
+
+  "tokens": {
+    "skillsmp_api_token": null,
+    "github_token": null
+  }
+}

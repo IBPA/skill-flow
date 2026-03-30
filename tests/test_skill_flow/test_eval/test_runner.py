@@ -2,17 +2,16 @@
 
 from unittest.mock import MagicMock
 
-import numpy as np
 from skill_flow.eval.models import (
     InjectedSkill,
+    PerQueryResult,
+    RetrievedSkill,
     TaskGroundTruth,
     TaskResult,
 )
-from skill_flow.eval.reporting import build_summary
-from skill_flow.eval.runner import (
-    _augment_index,
-    _build_task_result,
-)
+from skill_flow.eval.runner import _augment_searcher
+from skill_flow.eval.utils.reporting import build_summary
+from skill_flow.eval.utils.task_result import build_task_result
 from skill_flow.retriever.retriever import SearchResult
 
 
@@ -31,39 +30,27 @@ def _make_task_gt(
     )
 
 
-class TestAugmentIndex:
+class TestAugmentSearcher:
     def test_no_skills(self):
         searcher = MagicMock()
-        encoder = MagicMock()
-        _augment_index(searcher, encoder, [])
-        encoder.encode_documents.assert_not_called()
+        _augment_searcher(searcher, [])
+        searcher.augment.assert_not_called()
 
-    def test_adds_vectors_and_keys(self):
+    def test_calls_augment_with_keys_and_descriptions(self):
         searcher = MagicMock()
-        searcher._index = MagicMock()
-        searcher._skill_keys = ["skillsmp/existing"]
-        encoder = MagicMock()
-        vectors = np.zeros((2, 768), dtype=np.float32)
-        encoder.encode_documents.return_value = vectors
-
         skills = [
             InjectedSkill(key="skillsbench/t1/a", name="a", description="d a"),
             InjectedSkill(key="skillsbench/t1/b", name="b", description="d b"),
         ]
-        _augment_index(searcher, encoder, skills)
+        _augment_searcher(searcher, skills)
 
-        encoder.encode_documents.assert_called_once_with(["d a", "d b"])
-        searcher._index.add.assert_called_once()
-        assert "skillsbench/t1/a" in searcher._skill_keys
-        assert "skillsbench/t1/b" in searcher._skill_keys
+        searcher.augment.assert_called_once_with(
+            ["skillsbench/t1/a", "skillsbench/t1/b"],
+            ["d a", "d b"],
+        )
 
-    def test_injects_contents(self):
+    def test_injects_descriptions_and_contents(self):
         searcher = MagicMock()
-        searcher._index = MagicMock()
-        searcher._skill_keys = []
-        encoder = MagicMock()
-        encoder.encode_documents.return_value = np.zeros((1, 768), dtype=np.float32)
-
         skills = [
             InjectedSkill(
                 key="skillsbench/t1/a",
@@ -72,8 +59,9 @@ class TestAugmentIndex:
                 content="# Full content",
             ),
         ]
-        _augment_index(searcher, encoder, skills)
+        _augment_searcher(searcher, skills)
 
+        searcher.add_descriptions.assert_called_once_with({"skillsbench/t1/a": "d"})
         searcher.add_contents.assert_called_once_with(
             {"skillsbench/t1/a": "# Full content"}
         )
@@ -88,10 +76,11 @@ class TestBuildTaskResult:
         ]
 
         task = _make_task_gt(gt_keys=["skillsbench/task-1/a"])
-        result = _build_task_result(task, results, ks=[1, 3])
+        result = build_task_result(task, results, ks=[1, 3])
 
         assert result.task_id == "task-1"
         assert result.query == "test query"
+        assert result.retrieval_query == ""
         assert result.reciprocal_rank == 0.5
         assert result.recall_at[1] == 0.0
         assert result.recall_at[3] == 1.0
@@ -104,13 +93,48 @@ class TestBuildTaskResult:
         assert result.retrieved_skills[0].score == 0.9
         assert result.retrieved_skills[1].description == "desc a"
 
+    def test_retrieval_query_passthrough(self):
+        results = [
+            SearchResult(key="skillsbench/task-1/a", score=0.9),
+        ]
+        task = _make_task_gt(gt_keys=["skillsbench/task-1/a"])
+        result = build_task_result(
+            task, results, ks=[1], retrieval_query="concise query"
+        )
+        assert result.retrieval_query == "concise query"
+
+    def test_retrieval_queries_passthrough(self):
+        results = [
+            SearchResult(key="skillsbench/task-1/a", score=0.9),
+        ]
+        task = _make_task_gt(gt_keys=["skillsbench/task-1/a"])
+        per_query = [
+            PerQueryResult(
+                query="q1",
+                retrieved_skills=[
+                    RetrievedSkill(key="skillsbench/task-1/a", score=0.9),
+                ],
+            ),
+        ]
+        result = build_task_result(task, results, ks=[1], retrieval_queries=per_query)
+        assert len(result.retrieval_queries) == 1
+        assert result.retrieval_queries[0].query == "q1"
+
+    def test_retrieval_queries_default_empty(self):
+        results = [
+            SearchResult(key="skillsbench/task-1/a", score=0.9),
+        ]
+        task = _make_task_gt(gt_keys=["skillsbench/task-1/a"])
+        result = build_task_result(task, results, ks=[1])
+        assert result.retrieval_queries == []
+
     def test_no_hits(self):
         results = [
             SearchResult(key="skillsmp/x", score=0.9),
         ]
 
         task = _make_task_gt(gt_keys=["skillsbench/task-1/a"])
-        result = _build_task_result(task, results, ks=[1])
+        result = build_task_result(task, results, ks=[1])
 
         assert result.query == "test query"
         assert result.reciprocal_rank == 0.0

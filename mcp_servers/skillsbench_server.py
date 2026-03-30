@@ -18,7 +18,7 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from mcp_servers.skill_loader import LoadedSkill, load_task_skills
+from mcp_servers.utils.skill_loader import LoadedSkill, load_task_skills
 
 logger = logging.getLogger(__name__)
 

@@ -47,9 +47,9 @@ class TestEvalMode:
         """Test that all expected modes exist."""
         assert EvalMode.BASELINE.value == "baseline"
         assert EvalMode.SKILLS.value == "skills"
-        assert EvalMode.SKILLFLOW.value == "skillflow"
         assert EvalMode.MCP.value == "mcp"
-        assert EvalMode.SKILLFLOW_EVAL.value == "skillflow_eval"
+        assert EvalMode.SKILLFLOW_INJECTION.value == "skillflow_injection"
+        assert EvalMode.SKILLFLOW_CACHED.value == "skillflow_cached"
 
 
 class TestSkillsConfig:
@@ -59,22 +59,16 @@ class TestSkillsConfig:
         """Test creating config with only required field."""
         config = SkillsConfig(skills_dir=Path("outputs/skills/downloaded"))
         assert config.skills_dir == Path("outputs/skills/downloaded")
-        assert config.skill_list_name is None
         assert config.match_skill_to_task is False
-        assert config.skillflow_peer_url is None
 
     def test_custom_values(self) -> None:
         """Test setting custom values."""
         config = SkillsConfig(
             skills_dir=Path("/custom/path"),
-            skill_list_name="my-skills",
             match_skill_to_task=True,
-            skillflow_peer_url="http://localhost:9000",
         )
         assert config.skills_dir == Path("/custom/path")
-        assert config.skill_list_name == "my-skills"
         assert config.match_skill_to_task is True
-        assert config.skillflow_peer_url == "http://localhost:9000"
 
 
 class TestEnvironmentConfig:
@@ -166,28 +160,26 @@ class TestEvalConfig:
         assert config.skills is not None
         assert config.skills.skills_dir == skills_dir
 
-    def test_mode_derived_skillflow(self) -> None:
-        """Test mode is SKILLFLOW when skills config has peer URL."""
-        config = self._make_config(
-            skills=SkillsConfig(
-                skills_dir=Path("outputs/skills/downloaded"),
-                skillflow_peer_url="http://172.17.0.1:8765",
-            ),
-        )
-        assert config.mode == EvalMode.SKILLFLOW
-
     def test_mode_derived_mcp(self) -> None:
         """Test mode is MCP when mcp_url is set."""
         config = self._make_config(mcp_url="http://172.17.0.1:8765/sse")
         assert config.mode == EvalMode.MCP
 
-    def test_mode_derived_skillflow_eval(self) -> None:
-        """Test mode is SKILLFLOW_EVAL when eval_results is set."""
+    def test_mode_derived_skillflow_injection_from_eval_results(self) -> None:
+        """Test mode is SKILLFLOW_INJECTION when eval_results is set."""
         config = self._make_config(
             eval_results=Path("outputs/eval-selector-results.json"),
             tasks_dir_for_skills=Path("integration/skillsbench/tasks"),
         )
-        assert config.mode == EvalMode.SKILLFLOW_EVAL
+        assert config.mode == EvalMode.SKILLFLOW_INJECTION
+
+    def test_mode_derived_skillflow_injection_from_selector_cache(self) -> None:
+        """Test mode is SKILLFLOW_INJECTION when selector_cache set."""
+        config = self._make_config(
+            selector_cache=Path("outputs/selector-cache.json"),
+            tasks_dir_for_skills=Path("integration/skillsbench/tasks"),
+        )
+        assert config.mode == EvalMode.SKILLFLOW_INJECTION
 
     def test_eval_results_takes_precedence(self) -> None:
         """Test eval_results takes precedence over mcp_url."""
@@ -195,7 +187,20 @@ class TestEvalConfig:
             eval_results=Path("outputs/results.json"),
             mcp_url="http://172.17.0.1:8765/mcp",
         )
-        assert config.mode == EvalMode.SKILLFLOW_EVAL
+        assert config.mode == EvalMode.SKILLFLOW_INJECTION
+
+    def test_mode_derived_skillflow_cached(self) -> None:
+        """Test mode is SKILLFLOW_CACHED when mcp_url + cached_skillflow."""
+        config = self._make_config(
+            mcp_url="http://172.17.0.1:8765/mcp",
+            cached_skillflow=True,
+        )
+        assert config.mode == EvalMode.SKILLFLOW_CACHED
+
+    def test_cached_skillflow_without_mcp_url_is_baseline(self) -> None:
+        """Test cached_skillflow alone does not trigger cached mode."""
+        config = self._make_config(cached_skillflow=True)
+        assert config.mode == EvalMode.BASELINE
 
     def test_mcp_url_takes_precedence(self, tmp_path: Path) -> None:
         """Test mcp_url takes precedence over skills config."""

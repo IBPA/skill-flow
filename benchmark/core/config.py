@@ -14,18 +14,16 @@ class EvalMode(str, Enum):
 
     BASELINE = "baseline"
     SKILLS = "skills"
-    SKILLFLOW = "skillflow"
     MCP = "mcp"
-    SKILLFLOW_EVAL = "skillflow_eval"
+    SKILLFLOW_INJECTION = "skillflow_injection"
+    SKILLFLOW_CACHED = "skillflow_cached"
 
 
 class SkillsConfig(BaseModel):
     """Configuration for skills-based evaluation."""
 
     skills_dir: Path
-    skill_list_name: str | None = None
     match_skill_to_task: bool = False
-    skillflow_peer_url: str | None = None
 
 
 class EnvironmentConfig(BaseModel):
@@ -66,6 +64,8 @@ class EvalConfig(BaseModel):
     tasks_path: Path | None = None
     num_runs: int
     mcp_url: str | None = None
+    cached_skillflow: bool = False
+    selector_cache: Path | None = None
     eval_results: Path | None = None
     tasks_dir_for_skills: Path | None = None
     corpus_dir: Path | None = None
@@ -78,14 +78,17 @@ class EvalConfig(BaseModel):
     @property
     def mode(self) -> EvalMode:
         """Derive evaluation mode from config shape."""
-        if self.eval_results is not None:
-            return EvalMode.SKILLFLOW_EVAL
+        _is_injection = self.eval_results is not None or (
+            self.selector_cache is not None and not self.cached_skillflow
+        )
+        if _is_injection:
+            return EvalMode.SKILLFLOW_INJECTION
+        if self.mcp_url is not None and self.cached_skillflow:
+            return EvalMode.SKILLFLOW_CACHED
         if self.mcp_url is not None:
             return EvalMode.MCP
         if self.skills is None:
             return EvalMode.BASELINE
-        if self.skills.skillflow_peer_url is not None:
-            return EvalMode.SKILLFLOW
         return EvalMode.SKILLS
 
     @model_validator(mode="after")
@@ -99,33 +102,11 @@ class EvalConfig(BaseModel):
             msg = "Only one of 'dataset' or 'tasks_path' may be provided"
             raise ValueError(msg)
 
-        if self.skills and self.skills.skillflow_peer_url is None:
-            if not self.skills.skills_dir.exists():
-                msg = f"Skills directory not found: {self.skills.skills_dir}"
-                raise ValueError(msg)
-
-            if self.skills.skill_list_name:
-                skills_list_file = self._get_skills_list_file()
-                if not skills_list_file.exists():
-                    msg = f"Skills list file not found: {skills_list_file}"
-                    raise ValueError(msg)
-
-        return self
-
-    def _get_skills_list_file(self) -> Path:
-        """Get the full path to the skills list file."""
-        if not self.skills or not self.skills.skill_list_name:
-            msg = "No skill list name provided"
+        if self.skills and not self.skills.skills_dir.exists():
+            msg = f"Skills directory not found: {self.skills.skills_dir}"
             raise ValueError(msg)
 
-        skillsets_dir = get_project_root() / "benchmark/agents/skillsets"
-        return skillsets_dir / f"{self.skills.skill_list_name}.txt"
-
-    def get_skills_list_file(self) -> Path | None:
-        """Get skills list file path if configured."""
-        if self.skills and self.skills.skill_list_name:
-            return self._get_skills_list_file()
-        return None
+        return self
 
     @property
     def benchmark_source(self) -> str:
