@@ -5,7 +5,7 @@
 # Clones Overleaf, replaces contents with paper/, and pushes.
 # Uses --force only when --reset is passed (for when Overleaf history diverges).
 #
-# Usage: bash scripts/push-overleaf.sh [--reset]
+# Usage: bash paper/scripts/push-overleaf.sh [--reset]
 
 set -euo pipefail
 
