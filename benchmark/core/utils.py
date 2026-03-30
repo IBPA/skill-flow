@@ -94,8 +94,10 @@ def generate_job_name(config: EvalConfig) -> str:
         prefix = f"{bp}-baseline"
     elif config.mode == EvalMode.MCP:
         prefix = f"{bp}-mcp"
-    elif config.mode == EvalMode.SKILLFLOW:
-        prefix = f"{bp}-skillflow"
+    elif config.mode == EvalMode.SKILLFLOW_INJECTION:
+        prefix = f"{bp}-skillflow-injection"
+    elif config.mode == EvalMode.SKILLFLOW_CACHED:
+        prefix = f"{bp}-skillflow-cached"
     else:  # SKILLS mode
         prefix = _generate_skills_job_prefix(config)
 
@@ -129,7 +131,7 @@ def _generate_skills_job_prefix(config: EvalConfig) -> str:
     bp = _get_benchmark_prefix(config)
     # Use skill list name or skills dir basename
     assert config.skills
-    skill_name_part = config.skills.skill_list_name or config.skills.skills_dir.name
+    skill_name_part = config.skills.skills_dir.name
 
     parts = [f"{bp}-{skill_name_part}"]
 

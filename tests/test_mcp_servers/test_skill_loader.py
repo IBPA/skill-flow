@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-from mcp_servers.skill_loader import (
+from mcp_servers.utils.skill_loader import (
     LoadedSkill,
     ResolvedSkill,
     _load_skill_from_dir,

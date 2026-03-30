@@ -40,10 +40,6 @@ def print_multi_config(config: EvalConfig) -> None:
     print(f"Concurrency: {config.environment.n_concurrent}")
     if config.mode == EvalMode.SKILLS and config.skills:
         print(f"Skills dir: {config.skills.skills_dir}")
-        if config.skills.skill_list_name:
-            print(f"Skillset: {config.skills.skill_list_name}")
-        else:
-            print("Skillset: (none - using all skills in directory)")
 
     all_tasks = config.tasks.get_all_tasks()
     if all_tasks:
@@ -61,16 +57,16 @@ def print_mode_config(config: EvalConfig) -> None:
     elif config.mode == EvalMode.MCP:
         print("Mode: MCP (tool description validation)")
         print(f"MCP URL: {config.mcp_url}")
-    elif config.mode == EvalMode.SKILLFLOW:
-        print("Mode: SKILLFLOW (dynamic skill discovery)")
-        if config.skills:
-            print(f"SkillFlow peer: {config.skills.skillflow_peer_url}")
-    elif config.mode == EvalMode.SKILLFLOW_EVAL:
-        print("Mode: SKILLFLOW_EVAL (retrieved skills injection + MCP)")
-        print(f"Eval results: {config.eval_results}")
+    elif config.mode == EvalMode.SKILLFLOW_INJECTION:
+        source = "eval results" if config.eval_results else "selector cache"
+        path = config.eval_results or config.selector_cache
+        print(f"Mode: SKILLFLOW_INJECTION (skill injection from {source})")
+        print(f"Source: {path}")
         print(f"Tasks dir for skills: {config.tasks_dir_for_skills}")
-        if config.mcp_url:
-            print(f"MCP URL: {config.mcp_url}")
+    elif config.mode == EvalMode.SKILLFLOW_CACHED:
+        print("Mode: SKILLFLOW_CACHED (pre-computed skills via MCP)")
+        print(f"MCP URL: {config.mcp_url}")
+        print(f"Selector cache: {config.selector_cache}")
     else:
         _print_skills_mode_config(config)
 
@@ -80,13 +76,6 @@ def _print_skills_mode_config(config: EvalConfig) -> None:
     assert config.skills
     if config.skills.match_skill_to_task:
         print("Mode: MATCHED SKILLS (1:1 task-to-skill mapping)")
-    elif config.skills.skill_list_name:
-        print("Mode: CURATED SKILLS (filtered by skill list)")
     else:
         print("Mode: ALL SKILLS (using all skills in directory)")
     print(f"Skills dir: {config.skills.skills_dir}")
-    if config.skills.skill_list_name:
-        skills_list = config.get_skills_list_file()
-        print(f"Skills list: {skills_list}")
-    else:
-        print("Skills list: (none - using all skills)")

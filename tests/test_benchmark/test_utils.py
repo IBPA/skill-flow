@@ -133,21 +133,20 @@ class TestGenerateJobName:
         assert "20240101-120000" in job_name
 
     @patch("benchmark.core.utils.datetime")
-    def test_skillflow_mode(self, mock_datetime: Any) -> None:
-        """Test job name for skillflow mode."""
+    def test_skillflow_injection_mode(self, mock_datetime: Any) -> None:
+        """Test job name for skillflow injection mode."""
         mock_datetime.now.return_value.strftime.return_value = "20240101-120000"
 
-        config = make_config(
-            skills=SkillsConfig(
-                skills_dir=Path("outputs/skills/downloaded"),
-                skill_list_name=None,
-                match_skill_to_task=False,
-                skillflow_peer_url="http://172.17.0.1:8765",
-            ),
+        config = make_config()
+        config = config.model_copy(
+            update={
+                "eval_results": Path("outputs/eval-results.json"),
+                "tasks_dir_for_skills": Path("integration/skillsbench/tasks"),
+            }
         )
         job_name = generate_job_name(config)
 
-        assert job_name.startswith("tb-skillflow-gpt5mini-")
+        assert job_name.startswith("tb-skillflow-injection-gpt5mini-")
 
     @patch("benchmark.core.utils.datetime")
     def test_skills_mode_with_dir(self, mock_datetime: Any, tmp_path: Path) -> None:

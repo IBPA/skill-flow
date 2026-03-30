@@ -61,17 +61,17 @@ def build_mode_args(config: EvalConfig) -> list[str]:
     Returns:
         List of mode-specific arguments
     """
-    if config.mode == EvalMode.SKILLFLOW_EVAL:
-        return _build_skillflow_eval_args(config)
+    if config.mode == EvalMode.SKILLFLOW_INJECTION:
+        return _build_skillflow_injection_args(config)
+
+    if config.mode == EvalMode.SKILLFLOW_CACHED:
+        return _build_skillflow_cached_args(config)
 
     if config.mode == EvalMode.MCP:
         return _build_mcp_args(config)
 
     if config.mode == EvalMode.BASELINE:
         return _build_baseline_args(config)
-
-    if config.mode == EvalMode.SKILLFLOW:
-        return _build_skillflow_args(config)
 
     # Skills mode
     return _build_skills_args(config)
@@ -83,11 +83,29 @@ def _add_reasoning_effort(args: list[str], config: EvalConfig) -> None:
         args.extend(["--agent-kwarg", f"reasoning_effort={config.reasoning_effort}"])
 
 
+def _build_skillflow_cached_args(config: EvalConfig) -> list[str]:
+    """Build arguments for cached SkillFlow mode."""
+    assert config.selector_cache
+    args = [
+        "--agent-import-path",
+        "benchmark.agents.skillflow_mcp_cached_agent:SkillFlowMCPCachedAgent",
+        "--agent-kwarg",
+        'version="0.79"',
+        "--agent-kwarg",
+        f"mcp_url={config.mcp_url}",
+        "--agent-kwarg",
+        f"selector_cache={config.selector_cache}",
+    ]
+    _add_reasoning_effort(args, config)
+    args.extend(["--model", config.model])
+    return args
+
+
 def _build_mcp_args(config: EvalConfig) -> list[str]:
     """Build arguments for MCP test mode."""
     args = [
         "--agent-import-path",
-        "benchmark.agents.mcp_test_agent:McpTestAgent",
+        "benchmark.agents.skillflow_mcp_agent:SkillFlowMCPAgent",
         "--agent-kwarg",
         'version="0.79"',
         "--agent-kwarg",
@@ -98,22 +116,20 @@ def _build_mcp_args(config: EvalConfig) -> list[str]:
     return args
 
 
-def _build_skillflow_eval_args(config: EvalConfig) -> list[str]:
-    """Build arguments for SkillFlow eval mode."""
-    assert config.eval_results
-    assert config.tasks_dir_for_skills
+def _build_skillflow_injection_args(config: EvalConfig) -> list[str]:
+    """Build arguments for SkillFlow injection mode."""
     args = [
         "--agent-import-path",
-        "benchmark.agents.skillflow_eval_agent:SkillFlowEvalAgent",
+        "benchmark.agents.skillflow_injection_agent:SkillFlowInjectionAgent",
         "--agent-kwarg",
         'version="0.79"',
-        "--agent-kwarg",
-        f"eval_results={config.eval_results}",
-        "--agent-kwarg",
-        f"tasks_dir={config.tasks_dir_for_skills}",
     ]
-    if config.mcp_url:
-        args.extend(["--agent-kwarg", f"mcp_url={config.mcp_url}"])
+    if config.eval_results:
+        args.extend(["--agent-kwarg", f"eval_results={config.eval_results}"])
+    if config.selector_cache:
+        args.extend(["--agent-kwarg", f"selector_cache={config.selector_cache}"])
+    if config.tasks_dir_for_skills:
+        args.extend(["--agent-kwarg", f"tasks_dir={config.tasks_dir_for_skills}"])
     if config.corpus_dir:
         args.extend(["--agent-kwarg", f"corpus_dir={config.corpus_dir}"])
     _add_reasoning_effort(args, config)
@@ -125,25 +141,9 @@ def _build_baseline_args(config: EvalConfig) -> list[str]:
     """Build arguments for baseline mode."""
     args = [
         "--agent-import-path",
-        "benchmark.agents.skill_agent:SkillAgent",
+        "benchmark.agents.skillflow_injection_agent:SkillFlowInjectionAgent",
         "--agent-kwarg",
         'version="0.79"',
-    ]
-    _add_reasoning_effort(args, config)
-    args.extend(["--model", config.model])
-    return args
-
-
-def _build_skillflow_args(config: EvalConfig) -> list[str]:
-    """Build arguments for skillflow mode."""
-    assert config.skills
-    args = [
-        "--agent-import-path",
-        "benchmark.agents.codex_with_skillflow:CodexWithSkillFlow",
-        "--agent-kwarg",
-        'version="0.79"',
-        "--agent-kwarg",
-        f"skillflow_peer_url={config.skills.skillflow_peer_url}",
     ]
     _add_reasoning_effort(args, config)
     args.extend(["--model", config.model])
@@ -155,16 +155,12 @@ def _build_skills_args(config: EvalConfig) -> list[str]:
     assert config.skills
     args = [
         "--agent-import-path",
-        "benchmark.agents.skill_agent:SkillAgent",
+        "benchmark.agents.skillflow_injection_agent:SkillFlowInjectionAgent",
         "--agent-kwarg",
         'version="0.79"',
         "--agent-kwarg",
-        f"skills_source_dir={config.skills.skills_dir}",
+        f"skills_dir={config.skills.skills_dir}",
     ]
-
-    if config.skills.skill_list_name:
-        skills_list_file = config.get_skills_list_file()
-        args.extend(["--agent-kwarg", f"skills_list_file={skills_list_file}"])
 
     if config.skills.match_skill_to_task:
         args.extend(["--agent-kwarg", "match_skill_to_task=True"])

@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,7 +11,7 @@ from skill_flow.retriever.retriever import SearchResult
 from skill_flow.selector.selector import Selector
 
 
-def _make_config(tmp_path: Path, **overrides: object) -> SelectorConfig:
+def _make_config(tmp_path: Path, **overrides: Any) -> SelectorConfig:
     # Create minimal j2 template files for tests
     instructions_dir = tmp_path / "instructions"
     instructions_dir.mkdir(exist_ok=True)
@@ -26,15 +27,33 @@ def _make_config(tmp_path: Path, **overrides: object) -> SelectorConfig:
             "{% endfor %}"
         )
 
-    defaults: dict[str, object] = {
+    defaults: dict[str, Any] = {
         "enabled": True,
         "cache_path": str(tmp_path / "cache.json"),
-        "top_k": 5,
         "system_instruction": str(system_j2),
         "user_instruction": str(user_j2),
     }
     defaults.update(overrides)
     return SelectorConfig(**defaults)
+
+
+def _make_specificity_config(
+    tmp_path: Path,
+    **overrides: Any,
+) -> SelectorConfig:
+    """Create a SelectorConfig with specificity enabled."""
+    instructions_dir = tmp_path / "instructions"
+    instructions_dir.mkdir(exist_ok=True)
+    specificity_j2 = instructions_dir / "specificity.j2"
+    if not specificity_j2.exists():
+        specificity_j2.write_text("You are a specificity judge.")
+
+    defaults: dict[str, Any] = {
+        "specificity_instruction": str(specificity_j2),
+        "specificity_cache_path": str(tmp_path / "specificity_cache.json"),
+    }
+    defaults.update(overrides)
+    return _make_config(tmp_path, **defaults)
 
 
 def _make_candidates(n: int) -> list[SearchResult]:
@@ -52,7 +71,9 @@ def _make_candidates(n: int) -> list[SearchResult]:
 class TestSelector:
     @patch("skill_flow.selector.selector.OpenAI")
     def test_select_calls_llm_and_filters(
-        self, mock_openai_cls: MagicMock, tmp_path: Path,
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
     ):
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
@@ -74,7 +95,9 @@ class TestSelector:
 
     @patch("skill_flow.selector.selector.OpenAI")
     def test_preserves_original_scores(
-        self, mock_openai_cls: MagicMock, tmp_path: Path,
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
     ):
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
@@ -95,7 +118,9 @@ class TestSelector:
 
     @patch("skill_flow.selector.selector.OpenAI")
     def test_empty_candidates(
-        self, mock_openai_cls: MagicMock, tmp_path: Path,
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
     ):
         config = _make_config(tmp_path)
         selector = Selector(config)
@@ -107,7 +132,9 @@ class TestSelector:
 
     @patch("skill_flow.selector.selector.OpenAI")
     def test_cache_hit(
-        self, mock_openai_cls: MagicMock, tmp_path: Path,
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
     ):
         cache_path = tmp_path / "cache.json"
         cache_path.write_text(json.dumps({"t1": ["skill-0"]}))
@@ -124,7 +151,9 @@ class TestSelector:
 
     @patch("skill_flow.selector.selector.OpenAI")
     def test_cache_write_through(
-        self, mock_openai_cls: MagicMock, tmp_path: Path,
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
     ):
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
@@ -146,15 +175,15 @@ class TestSelector:
 
     @patch("skill_flow.selector.selector.OpenAI")
     def test_markdown_fence_parsing(
-        self, mock_openai_cls: MagicMock, tmp_path: Path,
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
     ):
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
         mock_response = MagicMock()
         # 1-based: candidates 1 and 2
-        mock_response.choices[0].message.content = (
-            "```json\n[1, 2]\n```"
-        )
+        mock_response.choices[0].message.content = "```json\n[1, 2]\n```"
         mock_client.chat.completions.create.return_value = mock_response
 
         config = _make_config(tmp_path)
@@ -168,7 +197,9 @@ class TestSelector:
 
     @patch("skill_flow.selector.selector.OpenAI")
     def test_unparseable_response_returns_all(
-        self, mock_openai_cls: MagicMock, tmp_path: Path,
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
     ):
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
@@ -186,7 +217,9 @@ class TestSelector:
 
     @patch("skill_flow.selector.selector.OpenAI")
     def test_invalid_indices_filtered(
-        self, mock_openai_cls: MagicMock, tmp_path: Path,
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
     ):
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
@@ -205,17 +238,19 @@ class TestSelector:
         assert results[0].key == "skill-0"
 
     @patch("skill_flow.selector.selector.OpenAI")
-    def test_top_k_config_trims_candidates(
-        self, mock_openai_cls: MagicMock, tmp_path: Path,
+    def test_input_top_k_trims_candidates(
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
     ):
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
         mock_response = MagicMock()
-        # 1-based: candidates 1 and 2 (top_k=2 so only first 2)
+        # 1-based: candidates 1 and 2 (input_top_k=2 so only first 2)
         mock_response.choices[0].message.content = "[1, 2]"
         mock_client.chat.completions.create.return_value = mock_response
 
-        config = _make_config(tmp_path, top_k=2)
+        config = _make_config(tmp_path, input_top_k=2)
         selector = Selector(config)
         candidates = _make_candidates(5)
 
@@ -224,8 +259,32 @@ class TestSelector:
         assert all(r.key in {"skill-0", "skill-1"} for r in results)
 
     @patch("skill_flow.selector.selector.OpenAI")
+    def test_input_top_k_truncates_candidates_before_llm(
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
+    ):
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+        mock_response = MagicMock()
+        mock_response.choices[0].message.content = "[1, 2, 3]"
+        mock_client.chat.completions.create.return_value = mock_response
+
+        config = _make_config(tmp_path, input_top_k=3)
+        selector = Selector(config)
+        candidates = _make_candidates(7)
+
+        results = selector.select("test query", candidates, task_id="t7")
+
+        # input_top_k=3 trims to 3 candidates
+        assert len(results) == 3
+        assert all(r.key in {"skill-0", "skill-1", "skill-2"} for r in results)
+
+    @patch("skill_flow.selector.selector.OpenAI")
     def test_uses_query_as_cache_key_when_no_task_id(
-        self, mock_openai_cls: MagicMock, tmp_path: Path,
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
     ):
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
@@ -242,6 +301,172 @@ class TestSelector:
 
         cached: dict[str, list[str]] = json.loads(cache_path.read_text())
         assert "my query" in cached
+
+
+class TestSpecificity:
+    """Tests for the two-step selector: relevancy + specificity."""
+
+    @patch("skill_flow.selector.selector.OpenAI")
+    def test_specificity_filters_after_relevancy(
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
+    ):
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        # First call: relevancy selects skill-0 and skill-1
+        # Second call: specificity keeps only skill-0
+        relevancy_resp = MagicMock()
+        relevancy_resp.choices[0].message.content = "[1, 2]"
+        specificity_resp = MagicMock()
+        specificity_resp.choices[0].message.content = '{"selected": [1]}'
+        mock_client.chat.completions.create.side_effect = [
+            relevancy_resp,
+            specificity_resp,
+        ]
+
+        config = _make_specificity_config(tmp_path)
+        selector = Selector(config)
+        candidates = _make_candidates(3)
+
+        results = selector.select("test query", candidates, task_id="t1")
+
+        assert len(results) == 1
+        assert results[0].key == "skill-0"
+        assert mock_client.chat.completions.create.call_count == 2
+
+    @patch("skill_flow.selector.selector.OpenAI")
+    def test_specificity_skipped_when_not_configured(
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
+    ):
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+        mock_response = MagicMock()
+        mock_response.choices[0].message.content = "[1, 2]"
+        mock_client.chat.completions.create.return_value = mock_response
+
+        config = _make_config(tmp_path)  # no specificity
+        selector = Selector(config)
+        candidates = _make_candidates(3)
+
+        results = selector.select("test query", candidates, task_id="t1")
+
+        assert len(results) == 2
+        mock_client.chat.completions.create.assert_called_once()
+
+    @patch("skill_flow.selector.selector.OpenAI")
+    def test_specificity_skipped_when_relevancy_empty(
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
+    ):
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+        mock_response = MagicMock()
+        mock_response.choices[0].message.content = '{"selected": []}'
+        mock_client.chat.completions.create.return_value = mock_response
+
+        config = _make_specificity_config(tmp_path)
+        selector = Selector(config)
+        candidates = _make_candidates(3)
+
+        results = selector.select("test query", candidates, task_id="t1")
+
+        assert results == []
+        # Only relevancy call, no specificity
+        mock_client.chat.completions.create.assert_called_once()
+
+    @patch("skill_flow.selector.selector.OpenAI")
+    def test_specificity_parse_failure_returns_empty(
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
+    ):
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        relevancy_resp = MagicMock()
+        relevancy_resp.choices[0].message.content = "[1, 2]"
+        specificity_resp = MagicMock()
+        specificity_resp.choices[0].message.content = "unparseable garbage"
+        mock_client.chat.completions.create.side_effect = [
+            relevancy_resp,
+            specificity_resp,
+        ]
+
+        config = _make_specificity_config(tmp_path)
+        selector = Selector(config)
+        candidates = _make_candidates(3)
+
+        results = selector.select("test query", candidates, task_id="t1")
+
+        # Conservative: returns empty on specificity parse failure
+        assert results == []
+
+    @patch("skill_flow.selector.selector.OpenAI")
+    def test_specificity_cache_hit(
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
+    ):
+        # Pre-populate both caches
+        cache_path = tmp_path / "cache.json"
+        cache_path.write_text(json.dumps({"t1": ["skill-0", "skill-1"]}))
+        spec_cache_path = tmp_path / "specificity_cache.json"
+        spec_cache_path.write_text(json.dumps({"t1": ["skill-0"]}))
+
+        config = _make_specificity_config(
+            tmp_path,
+            cache_path=str(cache_path),
+            specificity_cache_path=str(spec_cache_path),
+        )
+        selector = Selector(config)
+        candidates = _make_candidates(3)
+
+        results = selector.select("test query", candidates, task_id="t1")
+
+        assert len(results) == 1
+        assert results[0].key == "skill-0"
+        # No LLM calls — both cached
+        mock_openai_cls.return_value.chat.completions.create.assert_not_called()
+
+    @patch("skill_flow.selector.selector.OpenAI")
+    def test_specificity_cache_write_through(
+        self,
+        mock_openai_cls: MagicMock,
+        tmp_path: Path,
+    ):
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        relevancy_resp = MagicMock()
+        relevancy_resp.choices[0].message.content = "[1, 2]"
+        specificity_resp = MagicMock()
+        specificity_resp.choices[0].message.content = '{"selected": [2]}'
+        mock_client.chat.completions.create.side_effect = [
+            relevancy_resp,
+            specificity_resp,
+        ]
+
+        spec_cache_path = tmp_path / "specificity_cache.json"
+        config = _make_specificity_config(
+            tmp_path,
+            specificity_cache_path=str(spec_cache_path),
+        )
+        selector = Selector(config)
+        candidates = _make_candidates(3)
+
+        selector.select("test query", candidates, task_id="t1")
+
+        assert spec_cache_path.exists()
+        cached: dict[str, list[str]] = json.loads(
+            spec_cache_path.read_text(),
+        )
+        # skill-1 is the 2nd of the 2 relevancy-filtered candidates
+        assert cached["t1"] == ["skill-1"]
 
 
 class TestParseResponse:

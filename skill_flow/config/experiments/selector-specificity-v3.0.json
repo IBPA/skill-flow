@@ -1,0 +1,72 @@
+{
+  "pipeline": {
+    "tasks_dir": "integration/skillsbench/tasks",
+    "output_dir": "outputs/pipeline/skillsbench/specificity-v3.0"
+  },
+  "system": {},
+  "index": {
+    "input_corpus_path": "data/skills/",
+    "output_index_path": "outputs/indices/bge-base/"
+  },
+  "models": {
+    "retriever": {
+      "top_k": 1000,
+      "model_name": "BAAI/bge-base-en-v1.5",
+      "query_prompt": "Represent this sentence for searching relevant passages: ",
+      "batch_size": 256,
+      "query_gen": {
+        "enabled": true,
+        "model": "gpt-4o-mini",
+        "max_tokens": 200,
+        "temperature": 0.0,
+        "num_queries": 5,
+        "aggregation": "union",
+        "top_k_per_query": 200
+      }
+    },
+    "reranker": {
+      "enabled": true,
+      "input_top_k": 1000,
+      "model_name": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+      "batch_size": 128,
+      "max_content_chars": 512,
+      "query_gen": {
+        "enabled": true,
+        "model": "gpt-4o-mini",
+        "max_tokens": 200,
+        "temperature": 0.0,
+        "num_queries": 1,
+        "aggregation": "max"
+      }
+    },
+    "deep_reranker": {
+      "enabled": true,
+      "input_top_k": 100,
+      "model_name": "BAAI/bge-reranker-v2-m3",
+      "batch_size": 25,
+      "max_content_chars": 4096,
+      "query_gen": {
+        "enabled": true,
+        "model": "gpt-4o-mini",
+        "max_tokens": 200,
+        "temperature": 0.0,
+        "num_queries": 1,
+        "aggregation": "max"
+      }
+    },
+    "selector": {
+      "enabled": true,
+      "input_top_k": 10,
+      "max_selected": 1,
+      "model": "gpt-4o-mini",
+      "system_instruction": "skill_flow/selector/instructions/system_v4.0.j2",
+      "user_instruction": "skill_flow/selector/instructions/user_v0.1.j2",
+      "specificity_instruction": "skill_flow/selector/instructions/specificity_v3.0.j2",
+      "max_tokens": 1024,
+      "temperature": 0.0,
+      "max_workers": 10,
+      "cache_path": "outputs/pipeline/skillsbench/specificity-v3.0/selector_cache.json",
+      "specificity_cache_path": "outputs/pipeline/skillsbench/specificity-v3.0/specificity_cache.json"
+    }
+  }
+}

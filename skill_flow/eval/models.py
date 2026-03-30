@@ -1,67 +1,15 @@
 """Pydantic models for retriever evaluation."""
 
-from pathlib import Path
-
 from pydantic import BaseModel
-
-from skill_flow.config import (
-    Reranker2Config,
-    RerankerConfig,
-    RetrieverConfig,
-    SelectorConfig,
-)
 
 EVAL_KS: list[int] = [1, 2, 5, 10, 50, 100, 500, 1000]
 
 
 def filter_ks(top_k: int) -> list[int]:
-    """Return EVAL_KS values that are <= top_k."""
+    """Return EVAL_KS values that are <= top_k, or all if top_k is 0."""
+    if top_k <= 0:
+        return list(EVAL_KS)
     return [k for k in EVAL_KS if k <= top_k]
-
-
-class RerankerEvalConfig(BaseModel):
-    """Runtime configuration for a Stage 2-only reranker evaluation."""
-
-    stage1_report_path: Path
-    tasks_dir: Path
-    index_dir: Path = Path("outputs/indices/")
-    reranker: RerankerConfig = RerankerConfig(enabled=True)
-    max_tasks: int = 0
-    output_path: Path | None = None
-
-
-class Reranker2EvalConfig(BaseModel):
-    """Runtime configuration for a Stage 3 reranker2 evaluation."""
-
-    stage2_report_path: Path
-    tasks_dir: Path
-    index_dir: Path = Path("outputs/indices/")
-    reranker: Reranker2Config = Reranker2Config(enabled=True)
-    max_tasks: int = 0
-    output_path: Path | None = None
-
-
-class SelectorEvalConfig(BaseModel):
-    """Runtime configuration for a Stage 4 selector evaluation."""
-
-    stage3_report_path: Path
-    tasks_dir: Path
-    index_dir: Path = Path("outputs/indices/")
-    selector: SelectorConfig = SelectorConfig(enabled=True)
-    max_tasks: int = 0
-    output_path: Path | None = None
-
-
-class EvalRunConfig(BaseModel):
-    """Configuration for a retriever evaluation run."""
-
-    tasks_dir: Path
-    index_dir: Path = Path("outputs/indices/")
-    retriever: RetrieverConfig = RetrieverConfig()
-    max_query_chars: int = 0
-    max_tasks: int = 0
-    output_path: Path | None = None
-    reranker: RerankerConfig | None = None
 
 
 class InjectedSkill(BaseModel, frozen=True):
@@ -90,6 +38,14 @@ class RetrievedSkill(BaseModel, frozen=True):
     score: float
     description: str = ""
     content: str = ""
+    query_scores: list[float] = []
+
+
+class PerQueryResult(BaseModel, frozen=True):
+    """Per-query breakdown of retrieved skills for multi-query retrieval."""
+
+    query: str
+    retrieved_skills: list[RetrievedSkill]
 
 
 class TaskResult(BaseModel, frozen=True):
@@ -97,14 +53,19 @@ class TaskResult(BaseModel, frozen=True):
 
     task_id: str
     query: str = ""
+    retrieval_query: str = ""
     rerank_query: str = ""
     num_ground_truth: int
     num_injected: int
     retrieved_skills: list[RetrievedSkill] = []
+    retrieval_queries: list[PerQueryResult] = []
     recall_at: dict[int, float]
     precision_at: dict[int, float] = {}
     hit_at: dict[int, float]
     reciprocal_rank: float
+    select_recall: float = 0.0
+    select_precision: float = 0.0
+    elapsed_ms: float = 0.0
 
 
 class EvalSummary(BaseModel, frozen=True):
@@ -118,6 +79,9 @@ class EvalSummary(BaseModel, frozen=True):
     mean_precision_at: dict[int, float] = {}
     mean_hit_at: dict[int, float]
     mrr: float
+    mean_select_recall: float = 0.0
+    mean_select_precision: float = 0.0
+    mean_elapsed_ms: float = 0.0
 
 
 class EvalReport(BaseModel):
@@ -125,9 +89,4 @@ class EvalReport(BaseModel):
 
     summary: EvalSummary
     task_results: list[TaskResult]
-    config: (
-        EvalRunConfig
-        | RerankerEvalConfig
-        | Reranker2EvalConfig
-        | SelectorEvalConfig
-    )
+    config: dict[str, object] = {}

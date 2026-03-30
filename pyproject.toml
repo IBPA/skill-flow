@@ -6,12 +6,22 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.0.0",
+    "pydantic-settings>=2.1.0",
     "openai>=1.0.0",
     "python-dotenv>=1.2.1",
     "sentence-transformers>=3.0.0",
     "faiss-cpu>=1.9.0",
     "jinja2>=3.1.0",
     "mcp>=1.0.0",
+    "rank-bm25>=0.2.2",
+    "python-docx>=1.2.0",
+    "httpx>=0.27.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.0.0",
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "tenacity>=8.2.0",
+    "aiofiles>=23.2.0",
 ]
 
 [build-system]
@@ -19,10 +29,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["skill_flow", "benchmark", "mcp_servers"]
+packages = ["skill_flow", "skill_crawler", "benchmark", "mcp_servers"]
 
 [project.scripts]
 eval = "benchmark.scripts.cli:main"
+skill-crawler = "skill_crawler.cli:app"
 
 [dependency-groups]
 dev = [
@@ -31,8 +42,11 @@ dev = [
     "bandit[toml]>=1.7.0",
     "pytest>=8.0.0",
     "pytest-cov>=5.0.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-httpx>=0.30.0",
     "pre-commit>=3.7.0",
     "types-PyYAML>=6.0.0",
+    "types-aiofiles>=25.1.0.20251011",
     "matplotlib>=3.8.0",
     "tiktoken>=0.7.0",
 ]
@@ -44,7 +58,7 @@ eval = [
 [tool.ruff]
 target-version = "py312"
 line-length = 88
-src = ["skill_flow"]
+src = ["skill_flow", "skill_crawler"]
 exclude = [".claude/skills"]
 
 [tool.ruff.lint]
@@ -72,6 +86,9 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["ARG", "PLR2004"]
 
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
@@ -79,7 +96,7 @@ indent-style = "space"
 # MYPY
 [tool.mypy]
 python_version = "3.12"
-mypy_path = "skill_flow"
+mypy_path = "skill_flow:skill_crawler"
 warn_return_any = true
 warn_unused_configs = true
 warn_redundant_casts = true
@@ -100,7 +117,7 @@ disallow_untyped_defs = false
 # BANDIT
 [tool.bandit]
 exclude_dirs = ["tests"]
-skips = ["B101", "B104", "B311", "B404", "B603", "B607", "B701"]
+skips = ["B101", "B104", "B310", "B311", "B404", "B603", "B607", "B701"]
 
 # PYTEST
 [tool.pytest.ini_options]
@@ -115,16 +132,23 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--cov=skill_flow",
+    "--cov=skill_crawler",
     "--cov=benchmark",
     "--cov-report=term-missing",
     "--cov-fail-under=80",
 ]
-filterwarnings = ["error", "ignore::DeprecationWarning"]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "ignore::FutureWarning",
+    "ignore::pytest.PytestUnraisableExceptionWarning",
+]
 markers = [
     "slow: marks tests as slow",
     "integration: marks tests as integration tests",
 ]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 # COVERAGE
 [tool.coverage.run]
-omit = ["skill_flow/__old/*"]

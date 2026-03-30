@@ -26,6 +26,7 @@ class SearchResult(BaseModel):
     score: float  # cosine similarity
     description: str = ""
     content: str = ""
+    query_scores: list[float] = []
 
 
 class IndexSearcher:
@@ -86,6 +87,12 @@ class IndexSearcher:
             )
 
         return results
+
+    def augment(self, keys: list[str], descriptions: list[str]) -> None:
+        """Inject additional skill vectors into the FAISS index."""
+        vectors = self._encoder.encode_documents(descriptions)
+        self._index.add(vectors)
+        self._skill_keys.extend(keys)
 
     def add_descriptions(self, descriptions: dict[str, str]) -> None:
         """Register descriptions for dynamically injected skills."""

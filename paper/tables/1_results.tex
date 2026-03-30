@@ -1,0 +1,22 @@
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{rccccc}
+  \toprule
+  \textbf{Skillset} & \textbf{Pass@1} & \textbf{Pass@3} & \textbf{Pass\textasciicircum3} & \textbf{Steps/Task} & \textbf{Cost/Task} \\
+  \midrule
+  \multicolumn{6}{l}{\textit{SkillsBench}} \\
+  \midrule
+  \textit{Oracle}  & \textit{19.5}$^{*}${\scriptsize~[12.3, 27.2]} & \textit{35.4}{\scriptsize~[24.6, 47.7]} & \textit{6.2}{\scriptsize~[1.5, 12.3]} & \textit{20.1} & \textit{\$0.028} \\[2pt]
+  No Skills        & 9.2{\scriptsize~[4.1, 14.9]} & 16.9{\scriptsize~[7.7, 26.2]} & 0.0{\scriptsize~[0.0, 0.0]} & \textbf{18.7} & \$0.026 \\
+  Vercel           & 9.7{\scriptsize~[4.6, 15.4]} & 20.0{\scriptsize~[10.8, 30.8]} & 1.5{\scriptsize~[0.0, 4.6]} & 20.9 & \$0.029 \\
+  SkillFlow (Ours) & \textbf{16.4}$^{*}${\scriptsize~[9.7, 23.6]} & \textbf{29.2}{\scriptsize~[18.5, 40.0]} & \textbf{4.6}{\scriptsize~[0.0, 10.8]} & 18.8 & \textbf{\$0.025} \\
+  \midrule
+  \multicolumn{6}{l}{\textit{Terminal-Bench}} \\
+  \midrule
+  No Skills        & 34.8{\scriptsize~[26.1, 43.6]} & 46.6{\scriptsize~[36.4, 56.8]} & 20.5{\scriptsize~[12.5, 29.5]} & \textbf{21.1} & \textbf{\$0.030} \\
+  Vercel           & 32.6{\scriptsize~[24.2, 41.3]} & 45.5{\scriptsize~[35.2, 55.7]} & \textbf{21.6}{\scriptsize~[13.6, 30.7]} & 21.2 & \$0.031 \\
+  SkillFlow (Ours) & 31.8{\scriptsize~[23.9, 40.2]} & 46.6{\scriptsize~[36.4, 56.8]} & 17.0{\scriptsize~[9.1, 25.0]} & 23.0 & \$0.034 \\
+  SkillFlow-specific (Ours)$^{\dagger}$ & \textbf{34.9}{\scriptsize~[26.7, 43.2]} & \textbf{48.0}{\scriptsize~[37.8, 58.0]} & 21.0{\scriptsize~[13.4, 29.0]} & 24.2 & \$0.035 \\
+  \bottomrule
+  \multicolumn{6}{l}{\footnotesize $^{\dagger}$Terminal-Bench only; see \S5 for analysis.} \\
+\end{tabular}%
+}

@@ -4,15 +4,17 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from skill_flow.config import QueryGenConfig, RerankerConfig
+from skill_flow.config import QueryGenConfig, RerankerConfig, RetrieverConfig
 from skill_flow.eval.models import (
-    EvalRunConfig,
     InjectedSkill,
-    RerankerEvalConfig,
     TaskGroundTruth,
 )
-from skill_flow.eval.runner import run_evaluation, run_reranker_evaluation
+from skill_flow.eval.runner import run_evaluation
+from skill_flow.eval.runner_stages import run_reranker_evaluation
 from skill_flow.retriever.retriever import SearchResult
+
+_AUGMENT_PATH = "skill_flow.eval.runner._augment_searcher"
+_BUILD_SEARCHER_PATH = "skill_flow.eval.runner.build_searcher"
 
 
 def _make_task_gt(
@@ -31,14 +33,14 @@ def _make_task_gt(
 
 
 class TestRunEvaluation:
-    @patch("skill_flow.eval.runner.IndexSearcher")
-    @patch("skill_flow.eval.runner.Encoder")
+    @patch(_AUGMENT_PATH)
+    @patch(_BUILD_SEARCHER_PATH)
     @patch("skill_flow.eval.runner.load_ground_truth")
     def test_end_to_end(
         self,
         mock_gt: MagicMock,
-        mock_encoder_cls: MagicMock,
-        mock_searcher_cls: MagicMock,
+        mock_build_searcher: MagicMock,
+        mock_augment: MagicMock,
         tmp_path: Path,
     ):
         task = _make_task_gt(gt_keys=["skillsbench/task-1/a"])
@@ -51,35 +53,30 @@ class TestRunEvaluation:
         ]
         mock_gt.return_value = ([task], injected, [])
 
-        mock_encoder = MagicMock()
-        mock_encoder_cls.return_value = mock_encoder
-
         mock_searcher = MagicMock()
         mock_searcher.search.return_value = [
             SearchResult(key="skillsbench/task-1/a", score=0.9),
         ]
-        mock_searcher.add_descriptions = MagicMock()
-        mock_searcher.add_contents = MagicMock()
-        mock_searcher_cls.return_value = mock_searcher
+        mock_build_searcher.return_value = mock_searcher
 
         output = tmp_path / "report.json"
-        config = EvalRunConfig(
+        report = run_evaluation(
+            RetrieverConfig(),
             tasks_dir=tmp_path / "tasks",
             index_dir=tmp_path / "index",
             output_path=output,
         )
 
-        report = run_evaluation(config)
-
         assert report.summary.num_tasks_evaluated == 1
         assert report.summary.mrr == 1.0
         assert report.task_results[0].recall_at[1] == 1.0
         assert output.exists()
+        mock_augment.assert_called_once()
 
 
 class TestRunRerankerEvaluation:
-    @patch("skill_flow.eval.runner.Reranker")
-    @patch("skill_flow.eval.runner.load_ground_truth")
+    @patch("skill_flow.eval.runner_stages.Reranker")
+    @patch("skill_flow.eval.runner_stages.load_ground_truth")
     def test_end_to_end(
         self,
         mock_gt: MagicMock,
@@ -125,26 +122,21 @@ class TestRunRerankerEvaluation:
                     "precision_at": {"1": 0.0, "5": 0.2},
                     "hit_at": {"1": 0.0, "5": 1.0},
                     "reciprocal_rank": 0.5,
-                },
+                }
             ],
-            "config": {
-                "tasks_dir": "tasks",
-                "index_dir": "index",
-            },
+            "config": {"tasks_dir": "tasks", "index_dir": "index"},
         }
         stage1_path = tmp_path / "stage1.json"
         stage1_path.write_text(json.dumps(stage1_report))
 
         output = tmp_path / "reranker-report.json"
-        config = RerankerEvalConfig(
-            stage1_report_path=stage1_path,
-            tasks_dir=tmp_path / "tasks",
-            index_dir=tmp_path / "index",
-            reranker=RerankerConfig(enabled=True),
+        report = run_reranker_evaluation(
+            stage1_path,
+            RerankerConfig(enabled=True),
+            tmp_path / "tasks",
+            tmp_path / "index",
             output_path=output,
         )
-
-        report = run_reranker_evaluation(config)
 
         assert report.summary.num_tasks_evaluated == 1
         assert report.summary.mrr == 1.0
@@ -152,8 +144,8 @@ class TestRunRerankerEvaluation:
         assert output.exists()
         mock_reranker.rerank.assert_called_once()
 
-    @patch("skill_flow.eval.runner.Reranker")
-    @patch("skill_flow.eval.runner.load_ground_truth")
+    @patch("skill_flow.eval.runner_stages.Reranker")
+    @patch("skill_flow.eval.runner_stages.load_ground_truth")
     def test_threads_content_to_candidates(
         self,
         mock_gt: MagicMock,
@@ -198,24 +190,19 @@ class TestRunRerankerEvaluation:
                     "precision_at": {"1": 1.0},
                     "hit_at": {"1": 1.0},
                     "reciprocal_rank": 1.0,
-                },
+                }
             ],
-            "config": {
-                "tasks_dir": "tasks",
-                "index_dir": "index",
-            },
+            "config": {"tasks_dir": "tasks", "index_dir": "index"},
         }
         stage1_path = tmp_path / "stage1.json"
         stage1_path.write_text(json.dumps(stage1_report))
 
-        config = RerankerEvalConfig(
-            stage1_report_path=stage1_path,
-            tasks_dir=tmp_path / "tasks",
-            index_dir=tmp_path / "index",
-            reranker=RerankerConfig(enabled=True),
+        run_reranker_evaluation(
+            stage1_path,
+            RerankerConfig(enabled=True),
+            tmp_path / "tasks",
+            tmp_path / "index",
         )
-
-        run_reranker_evaluation(config)
 
         candidates = mock_reranker.rerank.call_args[0][1]
         gt_candidate = next(c for c in candidates if c.key == "skillsbench/task-1/a")
@@ -224,9 +211,9 @@ class TestRunRerankerEvaluation:
         corpus_candidate = next(c for c in candidates if c.key == "skillsmp/x")
         assert corpus_candidate.content == ""
 
-    @patch("skill_flow.eval.runner.QueryGenerator")
-    @patch("skill_flow.eval.runner.Reranker")
-    @patch("skill_flow.eval.runner.load_ground_truth")
+    @patch("skill_flow.pipeline.query_gen_init.QueryGenerator")
+    @patch("skill_flow.eval.runner_stages.Reranker")
+    @patch("skill_flow.eval.runner_stages.load_ground_truth")
     def test_uses_generated_query(
         self,
         mock_gt: MagicMock,
@@ -244,8 +231,12 @@ class TestRunRerankerEvaluation:
         mock_reranker_cls.return_value = mock_reranker
 
         mock_qgen = MagicMock()
-        mock_qgen.generate.return_value = "concise query"
+        mock_qgen.generate_multi.return_value = ["concise query"]
         mock_qgen_cls.return_value = mock_qgen
+
+        mock_reranker.rerank_multi.return_value = [
+            SearchResult(key="skillsbench/task-1/a", score=0.95, description="d"),
+        ]
 
         stage1_report = {
             "summary": {
@@ -274,32 +265,26 @@ class TestRunRerankerEvaluation:
                     "precision_at": {"1": 1.0},
                     "hit_at": {"1": 1.0},
                     "reciprocal_rank": 1.0,
-                },
+                }
             ],
-            "config": {
-                "tasks_dir": "tasks",
-                "index_dir": "index",
-            },
+            "config": {"tasks_dir": "tasks", "index_dir": "index"},
         }
         stage1_path = tmp_path / "stage1.json"
         stage1_path.write_text(json.dumps(stage1_report))
 
-        config = RerankerEvalConfig(
-            stage1_report_path=stage1_path,
-            tasks_dir=tmp_path / "tasks",
-            index_dir=tmp_path / "index",
-            reranker=RerankerConfig(
+        report = run_reranker_evaluation(
+            stage1_path,
+            RerankerConfig(
                 enabled=True,
                 query_gen=QueryGenConfig(
                     enabled=True,
                     cache_path=str(tmp_path / "c.json"),
                 ),
             ),
+            tmp_path / "tasks",
+            tmp_path / "index",
         )
 
-        report = run_reranker_evaluation(config)
-
-        mock_qgen.generate.assert_called_once_with("task-1", "test query")
-        rerank_call_query = mock_reranker.rerank.call_args[0][0]
-        assert rerank_call_query == "concise query"
+        mock_qgen.generate_multi.assert_called_once_with("task-1", "test query")
+        mock_reranker.rerank_multi.assert_called_once()
         assert report.task_results[0].rerank_query == "concise query"

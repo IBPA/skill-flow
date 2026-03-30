@@ -20,12 +20,46 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _build_encode_texts(
+    skills: list[SkillRecord],
+    encoder: Encoder,
+    corpus_path: Path | None,
+    max_content_tokens: int,
+) -> list[str]:
+    """Build the texts to encode for each skill.
+
+    *max_content_tokens* semantics:
+
+    * ``0`` — description only (default)
+    * ``-1`` — description + content, truncated to model's ``max_seq_length``
+    * ``N > 0`` — description + content, truncated to *N* tokens
+    """
+    descriptions = [s.description for s in skills]
+    if max_content_tokens == 0 or corpus_path is None:
+        return descriptions
+
+    token_budget = (
+        encoder.max_seq_length if max_content_tokens < 0 else max_content_tokens
+    )
+
+    texts: list[str] = []
+    for skill, desc in zip(skills, descriptions, strict=True):
+        try:
+            content = load_content(corpus_path, skill)
+            combined = desc + "\n" + content
+            texts.append(encoder.truncate_text(combined, token_budget))
+        except FileNotFoundError:
+            texts.append(desc)
+    return texts
+
+
 def build_index(
     skills: list[SkillRecord],
     encoder: Encoder,
     output_dir: Path,
     batch_size: int = 256,
     corpus_path: Path | None = None,
+    max_content_tokens: int = 0,
 ) -> None:
     """Build a FAISS index from skill descriptions and save to disk.
 
@@ -36,14 +70,24 @@ def build_index(
     * ``skill_ids.json`` — ordered list of skill keys
     * ``skill_descriptions.json`` — key → description mapping
     * ``skill_contents.json`` — key → full SKILL.md content (when *corpus_path* given)
+
+    When *max_content_tokens* != 0, encodes ``description + content``
+    (truncated to the token budget) instead of descriptions alone.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
     descriptions = [s.description for s in skills]
     skill_keys = [s.key for s in skills]
 
-    logger.info("Encoding %d skill descriptions …", len(descriptions))
-    embeddings = encoder.encode_documents(descriptions, batch_size=batch_size)
+    encode_texts = _build_encode_texts(
+        skills,
+        encoder,
+        corpus_path,
+        max_content_tokens,
+    )
+    label = "description+content" if max_content_tokens != 0 else "descriptions"
+    logger.info("Encoding %d skill %s …", len(encode_texts), label)
+    embeddings = encoder.encode_documents(encode_texts, batch_size=batch_size)
 
     dim = embeddings.shape[1]
     logger.info("Building FAISS IndexFlatIP (dim=%d) …", dim)

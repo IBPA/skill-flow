@@ -1,0 +1,55 @@
+{
+  "system": {},
+  "index": {
+    "input_corpus_path": "data/skills/",
+    "output_index_path": "outputs/indices/"
+  },
+  "models": {
+    "retriever": {
+      "model_name": "BAAI/bge-base-en-v1.5",
+      "query_prompt": "Represent this sentence for searching relevant passages: ",
+      "batch_size": 256,
+      "top_k": 1000
+    },
+    "reranker": {
+      "enabled": true,
+      "model_name": "BAAI/bge-reranker-v2-m3",
+      "batch_size": 128,
+      "max_content_chars": 512,
+      "query_gen": {
+        "enabled": true,
+        "model": "gpt-4o-mini",
+        "max_tokens": 200,
+        "temperature": 0.0,
+        "cache_path": "outputs/query_gen_cache.json"
+      }
+    },
+    "deep_reranker": {
+      "enabled": false,
+      "model_name": "BAAI/bge-reranker-v2-m3",
+      "batch_size": 32,
+      "max_content_chars": 32000,
+      "query_gen": {
+        "enabled": true,
+        "model": "gpt-4o-mini",
+        "max_tokens": 200,
+        "temperature": 0.0,
+        "cache_path": "outputs/query_gen_cache.json"
+      }
+    },
+    "selector": {
+      "enabled": false,
+      "model": "gpt-4o-mini",
+      "system_instruction": "skill_flow/selector/instructions/system_v1.0.j2",
+      "user_instruction": "skill_flow/selector/instructions/user_v0.1.j2",
+      "input_top_k": 5,
+      "max_tokens": 1024,
+      "temperature": 0.0,
+      "cache_path": "outputs/selector_cache.json"
+    }
+  },
+  "pipeline": {
+    "tasks_dir": "integration/skillsbench/tasks",
+    "output_dir": "outputs/pipeline/skillsbench"
+  }
+}

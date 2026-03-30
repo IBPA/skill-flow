@@ -5,8 +5,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from skill_flow.config import SelectorConfig
-from skill_flow.eval.models import SelectorEvalConfig, TaskGroundTruth
-from skill_flow.eval.runner import run_selector_evaluation
+from skill_flow.eval.models import TaskGroundTruth
+from skill_flow.eval.runner_stages import run_selector_evaluation
 from skill_flow.retriever.retriever import SearchResult
 
 
@@ -26,8 +26,8 @@ def _make_task_gt(
 
 
 class TestRunSelectorEvaluation:
-    @patch("skill_flow.eval.runner.Selector")
-    @patch("skill_flow.eval.runner.load_ground_truth")
+    @patch("skill_flow.eval.runner_stages.Selector")
+    @patch("skill_flow.eval.runner_stages.load_ground_truth")
     def test_end_to_end(
         self,
         mock_gt: MagicMock,
@@ -82,27 +82,21 @@ class TestRunSelectorEvaluation:
                     "precision_at": {"1": 1.0, "5": 0.2},
                     "hit_at": {"1": 1.0, "5": 1.0},
                     "reciprocal_rank": 1.0,
-                },
+                }
             ],
-            "config": {
-                "stage2_report_path": "stage2.json",
-                "tasks_dir": "tasks",
-                "index_dir": "index",
-            },
+            "config": {"tasks_dir": "tasks", "index_dir": "index"},
         }
         stage3_path = tmp_path / "stage3.json"
         stage3_path.write_text(json.dumps(stage3_report))
 
         output = tmp_path / "selector-report.json"
-        config = SelectorEvalConfig(
-            stage3_report_path=stage3_path,
-            tasks_dir=tmp_path / "tasks",
-            index_dir=tmp_path / "index",
-            selector=SelectorConfig(enabled=True),
+        report = run_selector_evaluation(
+            stage3_path,
+            SelectorConfig(enabled=True),
+            tmp_path / "tasks",
+            tmp_path / "index",
             output_path=output,
         )
-
-        report = run_selector_evaluation(config)
 
         assert report.summary.num_tasks_evaluated == 1
         assert report.summary.mrr == 1.0
@@ -110,8 +104,8 @@ class TestRunSelectorEvaluation:
         assert output.exists()
         mock_selector.select.assert_called_once()
 
-    @patch("skill_flow.eval.runner.Selector")
-    @patch("skill_flow.eval.runner.load_ground_truth")
+    @patch("skill_flow.eval.runner_stages.Selector")
+    @patch("skill_flow.eval.runner_stages.load_ground_truth")
     def test_filters_false_positives(
         self,
         mock_gt: MagicMock,
@@ -149,37 +143,28 @@ class TestRunSelectorEvaluation:
                             "score": 0.99,
                             "description": "d",
                         },
-                        {
-                            "key": "skillsmp/x",
-                            "score": 0.3,
-                            "description": "desc x",
-                        },
+                        {"key": "skillsmp/x", "score": 0.3, "description": "desc x"},
                     ],
                     "recall_at": {"1": 1.0},
                     "precision_at": {"1": 1.0},
                     "hit_at": {"1": 1.0},
                     "reciprocal_rank": 1.0,
-                },
+                }
             ],
-            "config": {
-                "stage2_report_path": "stage2.json",
-                "tasks_dir": "tasks",
-                "index_dir": "index",
-            },
+            "config": {"tasks_dir": "tasks", "index_dir": "index"},
         }
         stage3_path = tmp_path / "stage3.json"
         stage3_path.write_text(json.dumps(stage3_report))
 
         output = tmp_path / "selector-report.json"
-        config = SelectorEvalConfig(
-            stage3_report_path=stage3_path,
-            tasks_dir=tmp_path / "tasks",
-            index_dir=tmp_path / "index",
-            selector=SelectorConfig(enabled=True),
+        report = run_selector_evaluation(
+            stage3_path,
+            SelectorConfig(enabled=True),
+            tmp_path / "tasks",
+            tmp_path / "index",
             output_path=output,
         )
 
-        report = run_selector_evaluation(config)
-
-        assert report.summary.mrr == 0.0
+        assert report.summary.mrr == 0.5
         assert report.task_results[0].recall_at[1] == 0.0
+        assert report.task_results[0].recall_at[2] == 1.0

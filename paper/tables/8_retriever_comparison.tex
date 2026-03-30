@@ -1,0 +1,31 @@
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{ccccccccccc}
+  \toprule
+  \textbf{Retriever} & \textbf{Params} & \textbf{Metric} & \textbf{@1} & \textbf{@5} & \textbf{@10} & \textbf{@50} & \textbf{@100} & \textbf{@500} & \textbf{@1000} & \textbf{ms/query} \\
+  \midrule
+    \multirow{3}{*}{bge-base}                             & \multirow{3}{*}{110M} & R   & \textbf{0.235} & \textbf{0.415} & \textbf{0.477} & \textbf{0.606} & \textbf{0.641} & \textbf{0.803} & \textbf{0.843} & \multirow{3}{*}{22.8} \\
+                                          &                            & P   & \textbf{0.471} & \textbf{0.207} & \textbf{0.121} & \textbf{0.032} & \textbf{0.017} & \textbf{0.004} & \textbf{0.002} & \\
+                                          &                            & MRR & \multicolumn{7}{c}{\textbf{0.553}} & \\
+    \midrule
+    \multirow{3}{*}{bge-m3}                               & \multirow{3}{*}{568M} & R   & 0.199 & 0.361 & 0.420 & 0.531 & 0.594 & 0.741 & 0.806 & \multirow{3}{*}{46.3} \\
+                                          &                            & P   & 0.391 & 0.166 & 0.105 & 0.027 & 0.015 & 0.004 & 0.002 & \\
+                                          &                            & MRR & \multicolumn{7}{c}{0.479} & \\
+    \midrule
+    \multirow{3}{*}{e5-base}                              & \multirow{3}{*}{110M} & R   & 0.185 & 0.298 & 0.353 & 0.511 & 0.548 & 0.698 & 0.752 & \multirow{3}{*}{39.8} \\
+                                          &                            & P   & 0.379 & 0.145 & 0.086 & 0.027 & 0.015 & 0.004 & 0.002 & \\
+                                          &                            & MRR & \multicolumn{7}{c}{0.449} & \\
+    \midrule
+    \multirow{3}{*}{bge-m3 + content}                     & \multirow{3}{*}{568M} & R   & 0.123 & 0.299 & 0.366 & 0.463 & 0.507 & 0.655 & 0.730 & \multirow{3}{*}{47.3} \\
+                                          &                            & P   & 0.241 & 0.133 & 0.089 & 0.023 & 0.012 & 0.003 & 0.002 & \\
+                                          &                            & MRR & \multicolumn{7}{c}{0.358} & \\
+    \midrule
+    \multirow{3}{*}{bge-base + content}                   & \multirow{3}{*}{110M} & R   & 0.102 & 0.302 & 0.362 & 0.465 & 0.503 & 0.618 & 0.715 & \multirow{3}{*}{\textbf{22.1}} \\
+                                          &                            & P   & 0.172 & 0.133 & 0.085 & 0.024 & 0.013 & 0.003 & 0.002 & \\
+                                          &                            & MRR & \multicolumn{7}{c}{0.304} & \\
+    \midrule
+    \multirow{3}{*}{bm25}                                 & \multirow{3}{*}{---} & R   & 0.111 & 0.211 & 0.238 & 0.290 & 0.348 & 0.459 & 0.496 & \multirow{3}{*}{1592.1} \\
+                                          &                           & P   & 0.195 & 0.097 & 0.055 & 0.015 & 0.009 & 0.002 & 0.001 & \\
+                                          &                           & MRR & \multicolumn{7}{c}{0.266} & \\
+  \bottomrule
+\end{tabular}%
+}

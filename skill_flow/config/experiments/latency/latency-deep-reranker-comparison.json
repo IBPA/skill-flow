@@ -1,0 +1,39 @@
+{
+  "name": "deep-reranker-comparison",
+  "tasks_dir": "integration/skillsbench/tasks",
+  "output_dir": "outputs/experiments/latency/latency-deep-reranker-comparison/",
+  "max_tasks": 5,
+  "input_report_path": "outputs/experiments/reranker-comparison/cross-encoder-ms-marco-minilm-l-6-v2-512chars-q1-max.json",
+  "index_dir": "outputs/indices/bge-base/",
+  "cache_dir": "outputs/experiments/querygen-v2-cache/",
+  "rerankers": [
+    {
+      "enabled": true,
+      "model_name": "BAAI/bge-reranker-v2-m3",
+      "input_top_k": 100,
+      "batch_size": 25,
+      "max_content_chars": [
+        1024,
+        2048,
+        4096,
+        8192
+      ],
+      "query_gen": {
+        "enabled": true,
+        "model": "gpt-4o-mini",
+        "max_tokens": 200,
+        "temperature": 0.0,
+        "num_queries": [
+          1,
+          3,
+          5
+        ],
+        "aggregation": [
+          "max",
+          "mean",
+          "rrf"
+        ]
+      }
+    }
+  ]
+}

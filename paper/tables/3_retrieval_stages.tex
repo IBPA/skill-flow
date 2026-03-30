@@ -1,0 +1,19 @@
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{ccccccccccc}
+  \toprule
+  \textbf{Stage} & \textbf{K output} & \textbf{Metric} & \textbf{@1} & \textbf{@5} & \textbf{@10} & \textbf{@50} & \textbf{@100} & \textbf{@500} & \textbf{@1000} & \textbf{MRR} \\
+  \midrule
+  \multirow{2}{*}{Retriever}        & \multirow{2}{*}{1000}    & R   & 0.174{\scriptsize~[0.12, 0.24]} & 0.376{\scriptsize~[0.30, 0.46]} & 0.469{\scriptsize~[0.39, 0.55]} & 0.603{\scriptsize~[0.52, 0.69]} & 0.670{\scriptsize~[0.59, 0.75]} & 0.859{\scriptsize~[0.80, 0.91]} & 0.905{\scriptsize~[0.85, 0.95]} & \multirow{2}{*}{0.487{\scriptsize~[0.40, 0.58]}} \\
+                                    &                          & P   & 0.379{\scriptsize~[0.28, 0.48]} & 0.182{\scriptsize~[0.14, 0.22]} & 0.122{\scriptsize~[0.10, 0.15]} & 0.032{\scriptsize~[0.03, 0.04]} & 0.018{\scriptsize~[0.02, 0.02]} & 0.005{\scriptsize~[0.00, 0.01]} & 0.002{\scriptsize~[0.00, 0.00]} &  \\
+  \midrule
+  \multirow{2}{*}{Shallow Reranker} & \multirow{2}{*}{100}     & R   & 0.259{\scriptsize~[0.19, 0.33]} & 0.460{\scriptsize~[0.38, 0.55]} & 0.520{\scriptsize~[0.43, 0.61]} & 0.687{\scriptsize~[0.61, 0.76]} & 0.776{\scriptsize~[0.71, 0.84]} & ---   & ---   & \multirow{2}{*}{0.587{\scriptsize~[0.50, 0.68]}} \\
+                                    &                          & P   & 0.494{\scriptsize~[0.39, 0.60]} & 0.216{\scriptsize~[0.18, 0.26]} & 0.130{\scriptsize~[0.11, 0.16]} & 0.034{\scriptsize~[0.03, 0.04]} & 0.019{\scriptsize~[0.02, 0.02]} & ---   & ---   &  \\
+  \midrule
+  \multirow{2}{*}{Deep Reranker}    & \multirow{2}{*}{10}      & R   & 0.271{\scriptsize~[0.20, 0.34]} & 0.499{\scriptsize~[0.42, 0.58]} & 0.595{\scriptsize~[0.51, 0.68]} & ---   & ---   & ---   & ---   & \multirow{2}{*}{0.634{\scriptsize~[0.54, 0.72]}} \\
+                                    &                          & P   & 0.540{\scriptsize~[0.44, 0.64]} & 0.237{\scriptsize~[0.20, 0.28]} & 0.147{\scriptsize~[0.12, 0.17]} & ---   & ---   & ---   & ---   &  \\
+  \midrule
+  \multirow{2}{*}{Selector}         & \multirow{2}{*}{$\leq$5} & R   & 0.273{\scriptsize~[0.20, 0.34]} & 0.455{\scriptsize~[0.38, 0.53]} & ---   & ---   & ---   & ---   & ---   & \multirow{2}{*}{0.639{\scriptsize~[0.55, 0.73]}} \\
+                                    &                          & P   & 0.563{\scriptsize~[0.46, 0.67]} & 0.221{\scriptsize~[0.18, 0.26]} & ---   & ---   & ---   & ---   & ---   &  \\
+  \bottomrule
+\end{tabular}%
+}
