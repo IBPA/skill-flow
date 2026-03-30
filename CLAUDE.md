@@ -54,10 +54,10 @@ bash analysis/results/generate-paper-assets.sh --tables   # tables only
 bash analysis/results/generate-paper-assets.sh --figures  # figures only
 
 # Push paper/ to Overleaf (one-way sync)
-bash scripts/push-overleaf.sh
+bash paper/scripts/push-overleaf.sh
 
 # Push paper/ to Overleaf with history reset (when histories diverge)
-bash scripts/push-overleaf.sh --reset
+bash paper/scripts/push-overleaf.sh --reset
 
 # Crawl all skill sources
 uv run python -m skill_crawler crawl
@@ -238,7 +238,8 @@ skill-flow/
 ├── scripts/                    # Utility scripts
 │   ├── setup-git-hooks.sh      # Install pre-commit hooks
 │   ├── setup-claude-code.sh    # Configure Claude Code
-│   └── push-overleaf.sh        # One-way push paper/ to Overleaf (subtree or --reset)
+│   ├── scripts/
+│   │   └── push-overleaf.sh    # One-way push paper/ to Overleaf (subtree or --reset)
 │
 ├── jobs/                       # Job execution outputs (timestamped directories)
 └── outputs/
@@ -264,7 +265,7 @@ skill-flow/
 - **Retriever Eval**: Injects all GT skills into FAISS index at eval time with task-scoped keys (`skillsbench/{task_id}/{name}`) so each task's exact skill content is evaluated; writes incremental report snapshots after each task
 - **Auto-chained Eval**: `run_eval()` threads each stage's output path as the next stage's input — no explicit `stage*_report_path` needed when running the full pipeline; each `run_*_eval` function accepts an optional `prev_output_path` that overrides the configured input path, falling back to config for standalone usage
 - **Eval Metrics**: recall@k, precision@k, hit@k, MRR (mean reciprocal rank)
-- **Overleaf Sync**: `scripts/push-overleaf.sh` does a one-way subtree push of `paper/` to Overleaf; `--reset` clones Overleaf, replaces contents, and force-pushes when histories diverge. Requires `OVERLEAF_API_KEY` and `OVERLEAF_REPO_URL` in `.env`
+- **Overleaf Sync**: `paper/scripts/push-overleaf.sh` does a one-way subtree push of `paper/` to Overleaf; `--reset` clones Overleaf, replaces contents, and force-pushes when histories diverge. Requires `OVERLEAF_API_KEY` and `OVERLEAF_REPO_URL` in `.env`
 
 ## Code Standards
 
