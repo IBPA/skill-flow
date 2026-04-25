@@ -1,19 +1,28 @@
 #!/bin/bash
-# One-way push of paper/ directory to Overleaf.
-# Only the contents of paper/ are pushed as the root of Overleaf's master branch.
+# One-way push of paper/ contents to Overleaf.
+# The contents of paper/ become the root of Overleaf's master branch.
 #
 # Clones Overleaf, replaces contents with paper/, and pushes.
 # Uses --force only when --reset is passed (for when Overleaf history diverges).
 #
-# Usage: bash paper/scripts/push-overleaf.sh [--reset]
+# Usage (run from inside paper/):
+#   bash scripts/push-overleaf.sh [--reset]
 
 set -euo pipefail
 
-# Load .env if present
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PAPER_DIR="$(dirname "$SCRIPT_DIR")"
+
+if [ "$PWD" != "$PAPER_DIR" ]; then
+    echo "Error: must be run from $PAPER_DIR (current: $PWD)"
+    exit 1
+fi
+
+# Load .env: prefer paper/.env, fall back to project-root .env
 if [ -f .env ]; then
-    set -a
-    source .env
-    set +a
+    set -a; source .env; set +a
+elif [ -f ../.env ]; then
+    set -a; source ../.env; set +a
 fi
 
 if [ -z "${OVERLEAF_API_KEY:-}" ]; then
@@ -26,8 +35,9 @@ if [ -z "${OVERLEAF_REPO_URL:-}" ]; then
     exit 1
 fi
 
-if [ -z "$(ls -A paper/)" ]; then
-    echo "Error: paper/ directory is empty. Nothing to push."
+# Require at least one tracked-ish file in paper/ (not just submissions/)
+if [ -z "$(find . -maxdepth 1 -mindepth 1 ! -name submissions ! -name .git -print -quit)" ]; then
+    echo "Error: paper/ is empty. Nothing to push."
     exit 1
 fi
 
@@ -40,19 +50,21 @@ else
     echo "Pushing paper/ to Overleaf..."
 fi
 
-# Work in a temp directory to avoid touching the main worktree
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
 git clone "$OVERLEAF_URL" "$WORK_DIR"
-# Remove all existing files (except .git)
+# Wipe everything except .git
 find "$WORK_DIR" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-# Copy paper/ contents as root
-cp -r paper/* "$WORK_DIR"/
-# Include dotfiles like .gitignore if they exist
-for f in paper/.*; do
-    [ -f "$f" ] && cp "$f" "$WORK_DIR"/
+
+# Copy paper/ contents to Overleaf root, excluding submissions/ and .git
+for item in * .[!.]*; do
+    [ -e "$item" ] || continue
+    [ "$item" = "submissions" ] && continue
+    [ "$item" = ".git" ] && continue
+    cp -r "$item" "$WORK_DIR"/
 done
+
 cd "$WORK_DIR"
 git add -A
 
@@ -61,6 +73,6 @@ if git diff --cached --quiet; then
     exit 0
 fi
 
-git commit -m "Sync paper/ from skill-flow"
+git commit -m "Sync paper/ from project repo"
 git push $FORCE_FLAG origin master
 echo "Done."
