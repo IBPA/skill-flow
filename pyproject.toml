@@ -54,6 +54,12 @@ eval = [
     "harbor>=0.1.43",
 ]
 
+# UV
+[tool.uv]
+# Always install the eval group (harbor) so `uv run`/`uv sync` keep the
+# benchmark deps available without an explicit `--group eval`.
+default-groups = ["dev", "eval"]
+
 # RUFF
 [tool.ruff]
 target-version = "py312"
