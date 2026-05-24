@@ -48,10 +48,10 @@ class TestSkillFlowInjectionAgentSetup:
         mock_resolved = [ResolvedSkill("s1", "", skill_dir)]
         with (
             patch.object(
-                SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+                SkillFlowInjectionAgent.__bases__[1], "setup", new_callable=AsyncMock
             ),
             patch(
-                "benchmark.agents.skillflow_injection_agent.resolve_eval_skill_folders",
+                "benchmark.agents.skill_injection.resolve_eval_skill_folders",
                 return_value=mock_resolved,
             ),
         ):
@@ -76,7 +76,7 @@ class TestSkillFlowInjectionAgentSetup:
         env.exec = AsyncMock(return_value=MagicMock(stdout="", return_code=0))
         env.upload_file = AsyncMock()
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowInjectionAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(env))
         assert env.exec.call_count > 0
@@ -89,7 +89,7 @@ class TestSkillFlowInjectionAgentSetup:
         )
         env = AsyncMock()
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowInjectionAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(env))
         agent.logger.warning.assert_called()
@@ -142,7 +142,7 @@ class TestSkillFlowInjectionAgentSkillsDir:
         env.exec = AsyncMock(return_value=MagicMock(stdout="", return_code=0))
         env.upload_file = AsyncMock()
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowInjectionAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(env))
         assert env.exec.call_count > 0

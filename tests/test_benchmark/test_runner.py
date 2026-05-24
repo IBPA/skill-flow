@@ -3,6 +3,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 from benchmark.core.commands import (
     build_harbor_run_command,
     build_mode_args,
@@ -11,6 +12,7 @@ from benchmark.core.commands import (
     build_task_args,
 )
 from benchmark.core.config import (
+    AgentBackend,
     EnvironmentConfig,
     EvalConfig,
     RetryConfig,
@@ -19,6 +21,7 @@ from benchmark.core.config import (
 )
 from benchmark.core.display import print_config, print_multi_config
 from benchmark.core.runner import EvaluationRunner
+from pydantic import ValidationError
 
 
 def make_config(
@@ -37,12 +40,17 @@ def make_config(
     eval_results: Path | None = None,
     tasks_dir_for_skills: Path | None = None,
     corpus_dir: Path | None = None,
+    agent: AgentBackend = AgentBackend.CODEX,
+    model: str = "openai/gpt-5-mini-2025-08-07",
+    reasoning_effort: str | None = None,
 ) -> EvalConfig:
     """Helper to create EvalConfig with defaults."""
     return EvalConfig(
         job_name=job_name,
         jobs_dir=jobs_dir or Path("outputs/evaluation"),
-        model="openai/gpt-5-mini-2025-08-07",
+        model=model,
+        agent=agent,
+        reasoning_effort=reasoning_effort,
         dataset=dataset,
         tasks_path=tasks_path,
         num_runs=num_runs,
@@ -597,3 +605,97 @@ class TestDisplayFunctions:
             ),
         )
         print_multi_config(config)
+
+
+GEMINI_MODEL = "google/gemini-2.5-flash"
+GEMINI_IMPORT = "skillflow_gemini_agent:SkillFlowGeminiAgent"
+CODEX_IMPORT = "skillflow_injection_agent:SkillFlowInjectionAgent"
+
+
+class TestGeminiBackend:
+    """Tests for the Gemini agent backend selection in command building."""
+
+    def test_baseline_uses_gemini_agent(self) -> None:
+        """Gemini baseline selects the Gemini injection agent."""
+        config = make_config(agent=AgentBackend.GEMINI, model=GEMINI_MODEL)
+        joined = " ".join(build_mode_args(config))
+
+        assert GEMINI_IMPORT in joined
+        assert CODEX_IMPORT not in joined
+
+    def test_gemini_omits_codex_version_kwarg(self) -> None:
+        """The Codex-specific version pin is not passed for Gemini."""
+        config = make_config(agent=AgentBackend.GEMINI, model=GEMINI_MODEL)
+        joined = " ".join(build_mode_args(config))
+
+        assert "version=" not in joined
+
+    def test_gemini_omits_reasoning_effort(self) -> None:
+        """Gemini CLI has no reasoning-effort knob, so it is dropped."""
+        config = make_config(
+            agent=AgentBackend.GEMINI,
+            model=GEMINI_MODEL,
+            reasoning_effort="high",
+        )
+        joined = " ".join(build_mode_args(config))
+
+        assert "reasoning_effort" not in joined
+
+    def test_codex_still_includes_version_and_effort(self) -> None:
+        """Default Codex backend keeps version pin and reasoning effort."""
+        config = make_config(reasoning_effort="high")
+        joined = " ".join(build_mode_args(config))
+
+        assert CODEX_IMPORT in joined
+        assert 'version="0.79"' in joined
+        assert "reasoning_effort=high" in joined
+
+    def test_gemini_skills_mode(self, tmp_path: Path) -> None:
+        """Gemini skills (oracle/vercel) mode injects skills_dir kwarg."""
+        skills_dir = tmp_path / "skills"
+        skills_dir.mkdir()
+        config = make_config(
+            agent=AgentBackend.GEMINI,
+            model=GEMINI_MODEL,
+            skills=SkillsConfig(skills_dir=skills_dir, match_skill_to_task=True),
+        )
+        joined = " ".join(build_mode_args(config))
+
+        assert GEMINI_IMPORT in joined
+        assert f"skills_dir={skills_dir}" in joined
+        assert "match_skill_to_task=True" in joined
+
+    def test_gemini_injection_mode(self) -> None:
+        """Gemini SkillFlow-injection mode threads the eval-results source."""
+        config = make_config(
+            agent=AgentBackend.GEMINI,
+            model=GEMINI_MODEL,
+            eval_results=Path("outputs/eval-results.json"),
+            tasks_dir_for_skills=Path("integration/skillsbench/tasks"),
+        )
+        joined = " ".join(build_mode_args(config))
+
+        assert GEMINI_IMPORT in joined
+        assert "eval_results=outputs/eval-results.json" in joined
+
+    def test_gemini_rejects_mcp_mode(self) -> None:
+        """Gemini backend cannot run MCP modes."""
+        with pytest.raises(ValidationError, match="does not support MCP"):
+            make_config(
+                agent=AgentBackend.GEMINI,
+                model=GEMINI_MODEL,
+                mcp_url="http://host:8765/mcp",
+            )
+
+    def test_gemini_requires_provider_prefixed_model(self) -> None:
+        """Gemini model must be in provider/model form."""
+        with pytest.raises(ValidationError, match="provider/model"):
+            make_config(agent=AgentBackend.GEMINI, model="gemini-2.5-flash")
+
+    def test_print_config_shows_agent(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """Config display surfaces the selected agent backend."""
+        config = make_config(agent=AgentBackend.GEMINI, model=GEMINI_MODEL)
+        print_config(config, "test-job")
+        out = capsys.readouterr().out
+
+        assert "Agent: gemini" in out

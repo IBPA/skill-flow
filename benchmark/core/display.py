@@ -16,6 +16,7 @@ def print_config(config: EvalConfig, job_name: str) -> None:
     print(f"Job name: {job_name}")
     print(f"Job path: {config.jobs_dir}")
     print(f"Benchmark: {config.benchmark_source}")
+    print(f"Agent: {config.agent.value}")
     print(f"Model: {config.model}")
     print(f"Reasoning effort: {config.reasoning_effort or '(none)'}")
     env_name = "Daytona" if config.environment.use_daytona else "Docker"
@@ -35,6 +36,7 @@ def print_multi_config(config: EvalConfig) -> None:
     Args:
         config: Evaluation configuration
     """
+    print(f"Agent: {config.agent.value}")
     print(f"Model: {config.model}")
     print(f"Reasoning effort: {config.reasoning_effort or '(none)'}")
     print(f"Concurrency: {config.environment.n_concurrent}")

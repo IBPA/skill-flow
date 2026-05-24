@@ -36,6 +36,12 @@ uv run python -m skill_flow.cli eval --config skill_flow/config/default.json
 # Run benchmark evaluation CLI
 uv run python -m benchmark.scripts.cli run --config benchmark/config/default.json
 
+# Run benchmark with the Gemini CLI backend (requires GEMINI_API_KEY)
+uv run python -m benchmark.scripts.cli run --config benchmark/config/skillsbench/gemini/baseline.json
+
+# Pilot the Gemini backend on a handful of tasks to measure request/token budget
+uv run python -m benchmark.scripts.cli run --config benchmark/config/skillsbench/gemini/pilot-baseline.json
+
 # Run tests with coverage
 uv run pytest tests/ -v
 
@@ -164,7 +170,9 @@ skill-flow/
 │   ├── third_party/            # External integrations (Vercel baseline)
 │   └── agents/                 # Custom Harbor agents
 │       ├── base.py             # BaseCodexAgent (shared reasoning_effort support)
-│       ├── skillflow_injection_agent.py   # SkillFlow injection mode
+│       ├── skill_injection.py  # SkillInjectionMixin (CLI-agnostic skill resolution/injection)
+│       ├── skillflow_injection_agent.py   # SkillFlow injection mode (Codex backend)
+│       ├── skillflow_gemini_agent.py      # SkillFlow injection mode (Gemini CLI backend)
 │       ├── skillflow_mcp_agent.py         # SkillFlow MCP mode
 │       ├── skillflow_mcp_cached_agent.py  # SkillFlow MCP cached mode
 │       ├── skills/             # Skill management (manager.py, injector.py)
@@ -250,6 +258,7 @@ skill-flow/
 
 - **Configuration**: Pydantic models with nested hierarchy (`system`/`index`/`models`) — `skill_flow/config/default.json` for core, `skill_flow/config/default_eval.json` for eval (all stages enabled), `benchmark/config/default.json` + `benchmark/config/skillsbench/` for benchmark eval
 - **Eval Modes**: Derived from config shape — baseline (no skills field), skills (skills.skills_dir), skillflow (skills.skillflow_peer_url)
+- **Agent Backends**: `EvalConfig.agent` selects the CLI harness — `codex` (default, GPT-5-mini via `SkillFlowInjectionAgent`) or `gemini` (Gemini Flash via `SkillFlowGeminiAgent`, auth `GEMINI_API_KEY`). Both share skill resolution/injection via `SkillInjectionMixin`; `commands.py` picks the import path and omits `reasoning_effort`/Codex `version` for Gemini. Gemini supports baseline/skills(oracle+vercel)/skillflow-injection conditions but not MCP modes (config validation rejects them). Gemini configs live in `benchmark/config/skillsbench/gemini/`; model must be `provider/model` (default `google/gemini-2.5-flash`). Respect AI Studio limits (1K RPM, 2M TPM, 10K RPD) via conservative `environment.n_concurrent` and resume after daily-quota exhaustion (`retry.resume`)
 - **Multi-stage Retrieval**: Stage 1 retrieval via `Searcher` protocol (dense FAISS or BM25 sparse, with optional LLM query generation via `models.retriever.query_gen`) → Stage 2 cross-encoder reranker (`BAAI/bge-reranker-v2-m3`) → optional Stage 3 deep_reranker (same cross-encoder class, configurable independently) → optional Stage 4 LLM selector (binary relevant/not-relevant filtering via OpenAI); `--rerank` enables Stage 2, Stage 3 chains automatically when `models.deep_reranker.enabled`, Stage 4 chains when `models.selector.enabled`
 - **Searcher Protocol**: `Searcher` in `skill_flow/retriever/protocol.py` defines the shared interface (`search`, `augment`, `add_descriptions`, `add_contents`) that both `IndexSearcher` (dense FAISS) and `BM25Searcher` (rank-bm25 sparse) implement
 - **Retriever Experiments**: `RetrieverExperimentConfig` defines multi-retriever comparison experiments; `skill_flow.cli experiment` runs all variants and prints a comparison table

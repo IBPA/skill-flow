@@ -92,7 +92,7 @@ class TestSkillFlowInjectionAgentSetup:
         environment = AsyncMock()
 
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowInjectionAgent.__bases__[1], "setup", new_callable=AsyncMock
         ) as mock_super:
             asyncio.run(agent.setup(environment))
             mock_super.assert_called_once_with(environment)
@@ -132,7 +132,7 @@ class TestSkillFlowInjectionAgentSetup:
         environment.upload_file = AsyncMock()
 
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowInjectionAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(environment))
 
@@ -162,7 +162,7 @@ class TestSkillFlowInjectionAgentSetup:
         environment.upload_file = AsyncMock()
 
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowInjectionAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(environment))
 
@@ -176,7 +176,7 @@ class TestSkillFlowInjectionAgentSetup:
         environment = AsyncMock()
 
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowInjectionAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(environment))
 
@@ -202,7 +202,7 @@ class TestSkillFlowInjectionAgentSetup:
         environment = AsyncMock()
 
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowInjectionAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(environment))
 

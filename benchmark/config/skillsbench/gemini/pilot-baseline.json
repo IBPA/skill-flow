@@ -1,0 +1,40 @@
+{
+  "jobs_dir": "outputs/evaluation",
+  "model": "google/gemini-2.5-flash",
+  "agent": "gemini",
+  "tasks_path": "integration/skillsbench/tasks-no-skills",
+  "num_runs": 1,
+  "environment": {
+    "use_daytona": true,
+    "n_concurrent": 5
+  },
+  "tasks": {
+    "include_tasks": [
+      "sales-pivot-analysis",
+      "mario-coin-counting",
+      "flood-risk-analysis",
+      "protein-expression-analysis",
+      "sec-financial-report",
+      "offer-letter-generator",
+      "earthquake-plate-calculation",
+      "software-dependency-audit"
+    ],
+    "exclude_tasks": []
+  },
+  "retry": {
+    "resume": false,
+    "retry_errors": false,
+    "retry_tasks": [],
+    "retry_error_types": [
+      "AgentSetupTimeoutError",
+      "CancelledError",
+      "EnvironmentStartTimeoutError",
+      "RewardFileNotFoundError",
+      "VerifierTimeoutError",
+      "RuntimeError",
+      "DaytonaNotFoundError",
+      "AddTestsDirError"
+    ]
+  },
+  "job_name": "gemini-pilot-baseline"
+}
