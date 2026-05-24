@@ -104,7 +104,7 @@ class TestEvaluationRunner:
         cmd = mock_execute.call_args[0][0]
         assert "harbor" in cmd
         assert "--agent-import-path" in cmd
-        assert "SkillFlowInjectionAgent" in " ".join(cmd)
+        assert "SkillFlowCodexAgent" in " ".join(cmd)
 
     @patch("benchmark.core.runner.EvaluationRunner._execute_command")
     @patch("benchmark.core.display.print_config")
@@ -129,7 +129,7 @@ class TestEvaluationRunner:
         assert result == 0
         cmd = mock_execute.call_args[0][0]
         assert "--agent-import-path" in cmd
-        assert "SkillFlowInjectionAgent" in " ".join(cmd)
+        assert "SkillFlowCodexAgent" in " ".join(cmd)
 
     @patch("benchmark.core.display.print_config")
     def test_run_resume_missing_dir(
@@ -466,7 +466,7 @@ class TestBuildCommands:
         args = build_mode_args(config)
 
         joined = " ".join(args)
-        assert "skillflow_injection_agent:SkillFlowInjectionAgent" in joined
+        assert "skillflow_injection_agent:SkillFlowCodexAgent" in joined
         assert "eval_results=outputs/eval-results.json" in joined
         assert "tasks_dir=integration/skillsbench/tasks" in joined
         assert "corpus_dir=data/skills" in joined
@@ -480,7 +480,7 @@ class TestBuildCommands:
         args = build_mode_args(config)
 
         joined = " ".join(args)
-        assert "skillflow_injection_agent:SkillFlowInjectionAgent" in joined
+        assert "skillflow_injection_agent:SkillFlowCodexAgent" in joined
         assert "selector_cache=outputs/cache.json" in joined
         assert "tasks_dir=integration/skillsbench/tasks" in joined
 
@@ -493,7 +493,7 @@ class TestBuildCommands:
         args = build_mode_args(config)
 
         joined = " ".join(args)
-        assert "SkillFlowInjectionAgent" in joined
+        assert "SkillFlowCodexAgent" in joined
         assert (
             "selector_cache=outputs/batch/terminal-bench/selector_cache.json" in joined
         )
@@ -608,8 +608,8 @@ class TestDisplayFunctions:
 
 
 GEMINI_MODEL = "google/gemini-2.5-flash"
-GEMINI_IMPORT = "skillflow_gemini_agent:SkillFlowGeminiAgent"
-CODEX_IMPORT = "skillflow_injection_agent:SkillFlowInjectionAgent"
+GEMINI_IMPORT = "skillflow_injection_agent:SkillFlowGeminiAgent"
+CODEX_IMPORT = "skillflow_injection_agent:SkillFlowCodexAgent"
 
 
 class TestGeminiBackend:

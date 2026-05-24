@@ -87,11 +87,11 @@ def _injection_agent_args(config: EvalConfig) -> list[str]:
     if config.agent == AgentBackend.GEMINI:
         return [
             "--agent-import-path",
-            "benchmark.agents.skillflow_gemini_agent:SkillFlowGeminiAgent",
+            "benchmark.agents.skillflow_injection_agent:SkillFlowGeminiAgent",
         ]
     return [
         "--agent-import-path",
-        "benchmark.agents.skillflow_injection_agent:SkillFlowInjectionAgent",
+        "benchmark.agents.skillflow_injection_agent:SkillFlowCodexAgent",
         "--agent-kwarg",
         'version="0.79"',
     ]

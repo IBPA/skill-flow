@@ -4,8 +4,10 @@ import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from benchmark.agents.skill_injection import SkillInjectionMixin
-from benchmark.agents.skillflow_gemini_agent import SkillFlowGeminiAgent
+from benchmark.agents.skillflow_injection_agent import (
+    SkillFlowGeminiAgent,
+    SkillInjectionMixin,
+)
 from benchmark.agents.skills import SkillManager, TarGzSkillInjector
 from harbor.agents.installed.gemini_cli import GeminiCli
 
