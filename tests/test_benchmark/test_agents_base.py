@@ -5,9 +5,9 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from benchmark.agents.base import (
+from benchmark.agents.codex_adapter import (
     TASK_NAME_SEPARATOR,
-    BaseCodexAgent,
+    AdaptedCodex,
     McpServer,
     get_project_root,
 )
@@ -35,8 +35,8 @@ class TestGetProjectRoot:
         assert (root / "benchmark").exists()
 
 
-class TestBaseCodexAgentCreateRunAgentCommands:
-    """Tests for BaseCodexAgent.create_run_agent_commands."""
+class TestAdaptedCodexCreateRunAgentCommands:
+    """Tests for AdaptedCodex.create_run_agent_commands."""
 
     def test_create_commands_with_model(self) -> None:
         """Test creating run commands with model."""
@@ -94,7 +94,7 @@ class TestBaseCodexAgentCreateRunAgentCommands:
         assert "model_reasoning_effort" not in commands[1].command
 
 
-class TestBaseCodexAgentMcpRegistration:
+class TestAdaptedCodexMcpRegistration:
     """Tests for MCP server registration in create_run_agent_commands."""
 
     def test_mcp_registration_included_when_servers_set(self) -> None:
@@ -121,10 +121,10 @@ def create_mock_base_agent(
     model_name: str | None = "openai/gpt-5-mini",
     reasoning_effort: str | None = None,
     mcp_servers: list[McpServer] | None = None,
-) -> BaseCodexAgent:
-    """Create a mock BaseCodexAgent for testing."""
-    with patch.object(BaseCodexAgent, "__init__", lambda self, *args, **kwargs: None):
-        agent = BaseCodexAgent.__new__(BaseCodexAgent)
+) -> AdaptedCodex:
+    """Create a mock AdaptedCodex for testing."""
+    with patch.object(AdaptedCodex, "__init__", lambda self, *args, **kwargs: None):
+        agent = AdaptedCodex.__new__(AdaptedCodex)
 
     agent.logger = MagicMock()
     agent.logs_dir = logs_dir or Path("/tmp/test-logs")

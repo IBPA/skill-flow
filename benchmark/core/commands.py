@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from benchmark.core.config import EvalConfig, EvalMode
+from benchmark.core.config import AgentBackend, EvalConfig, EvalMode
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -77,9 +77,33 @@ def build_mode_args(config: EvalConfig) -> list[str]:
     return _build_skills_args(config)
 
 
+def _injection_agent_args(config: EvalConfig) -> list[str]:
+    """Build the import-path (and Codex version) args for the injection agent.
+
+    Selects the Codex or Gemini injection agent based on the configured backend.
+    The ``version`` kwarg pins the Codex CLI version and is not applicable to
+    Gemini (whose install defaults to the latest published CLI).
+    """
+    if config.agent == AgentBackend.GEMINI:
+        return [
+            "--agent-import-path",
+            "benchmark.agents.skillflow_injection_agent:SkillFlowGeminiAgent",
+        ]
+    return [
+        "--agent-import-path",
+        "benchmark.agents.skillflow_injection_agent:SkillFlowCodexAgent",
+        "--agent-kwarg",
+        'version="0.79"',
+    ]
+
+
 def _add_reasoning_effort(args: list[str], config: EvalConfig) -> None:
-    """Add reasoning_effort kwarg if configured."""
-    if config.reasoning_effort:
+    """Add reasoning_effort kwarg if configured (Codex only).
+
+    The Gemini CLI has no reasoning-effort knob, so the kwarg is skipped for
+    that backend.
+    """
+    if config.reasoning_effort and config.agent != AgentBackend.GEMINI:
         args.extend(["--agent-kwarg", f"reasoning_effort={config.reasoning_effort}"])
 
 
@@ -118,12 +142,7 @@ def _build_mcp_args(config: EvalConfig) -> list[str]:
 
 def _build_skillflow_injection_args(config: EvalConfig) -> list[str]:
     """Build arguments for SkillFlow injection mode."""
-    args = [
-        "--agent-import-path",
-        "benchmark.agents.skillflow_injection_agent:SkillFlowInjectionAgent",
-        "--agent-kwarg",
-        'version="0.79"',
-    ]
+    args = _injection_agent_args(config)
     if config.eval_results:
         args.extend(["--agent-kwarg", f"eval_results={config.eval_results}"])
     if config.selector_cache:
@@ -139,12 +158,7 @@ def _build_skillflow_injection_args(config: EvalConfig) -> list[str]:
 
 def _build_baseline_args(config: EvalConfig) -> list[str]:
     """Build arguments for baseline mode."""
-    args = [
-        "--agent-import-path",
-        "benchmark.agents.skillflow_injection_agent:SkillFlowInjectionAgent",
-        "--agent-kwarg",
-        'version="0.79"',
-    ]
+    args = _injection_agent_args(config)
     _add_reasoning_effort(args, config)
     args.extend(["--model", config.model])
     return args
@@ -153,14 +167,8 @@ def _build_baseline_args(config: EvalConfig) -> list[str]:
 def _build_skills_args(config: EvalConfig) -> list[str]:
     """Build arguments for skills mode."""
     assert config.skills
-    args = [
-        "--agent-import-path",
-        "benchmark.agents.skillflow_injection_agent:SkillFlowInjectionAgent",
-        "--agent-kwarg",
-        'version="0.79"',
-        "--agent-kwarg",
-        f"skills_dir={config.skills.skills_dir}",
-    ]
+    args = _injection_agent_args(config)
+    args.extend(["--agent-kwarg", f"skills_dir={config.skills.skills_dir}"])
 
     if config.skills.match_skill_to_task:
         args.extend(["--agent-kwarg", "match_skill_to_task=True"])

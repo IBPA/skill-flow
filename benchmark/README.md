@@ -24,7 +24,7 @@ uv run python -m benchmark.scripts.cli run --config benchmark/config/skillsbench
 The evaluation framework consists of:
 
 1. **Baseline Agent** - Standard Harbor Codex agent without skill augmentation
-2. **SkillFlow Injection Agent** (`SkillFlowInjectionAgent`) - Injects SkillFlow-retrieved SKILL.md files into containers
+2. **SkillFlow Injection Agent** (`SkillFlowCodexAgent`) - Injects SkillFlow-retrieved SKILL.md files into containers
 3. **SkillFlow MCP Agent** (`SkillFlowMcpAgent`) - Integrates with SkillFlow via MCP server
 4. **SkillFlow MCP Cached Agent** (`SkillFlowMcpCachedAgent`) - MCP integration with cached skill results
 
@@ -78,9 +78,9 @@ Configs live in `benchmark/config/`. The default config (`default.json`) runs a 
 
 ## How Skills Are Injected
 
-The `SkillFlowInjectionAgent` extends the base Harbor agent to inject skills at setup time via `TarGzSkillInjector`:
+The `SkillFlowCodexAgent` extends the base Harbor agent to inject skills at setup time via `TarGzSkillInjector`:
 
-1. **Agent Initialization**: `SkillFlowInjectionAgent.setup()` is called
+1. **Agent Initialization**: `SkillFlowCodexAgent.setup()` is called
 2. **Standard Setup**: Runs normal Codex installation
 3. **Skill Discovery**: Finds all SKILL.md files in the configured skills directory
 4. **tar.gz Injection**: Packages and uploads skills into the Docker container
@@ -110,7 +110,7 @@ benchmark/
 │   └── mcp-golden.sh                   # Run MCP golden-skills experiment
 ├── third_party/                       # External integrations (Vercel baseline)
 └── agents/
-    ├── base.py                         # BaseCodexAgent (shared reasoning_effort)
+    ├── base.py                         # AdaptedCodex (shared reasoning_effort)
     ├── skillflow_injection_agent.py    # SkillFlow injection mode
     ├── skillflow_mcp_agent.py          # SkillFlow MCP mode
     ├── skillflow_mcp_cached_agent.py   # SkillFlow MCP cached mode

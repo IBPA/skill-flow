@@ -19,6 +19,13 @@ class EvalMode(str, Enum):
     SKILLFLOW_CACHED = "skillflow_cached"
 
 
+class AgentBackend(str, Enum):
+    """Agent CLI backend used to drive the evaluation."""
+
+    CODEX = "codex"
+    GEMINI = "gemini"
+
+
 class SkillsConfig(BaseModel):
     """Configuration for skills-based evaluation."""
 
@@ -59,6 +66,7 @@ class EvalConfig(BaseModel):
     job_name: str | None = None
     jobs_dir: Path
     model: str
+    agent: AgentBackend = AgentBackend.CODEX
     reasoning_effort: str | None = None
     dataset: str | None = None
     tasks_path: Path | None = None
@@ -104,6 +112,20 @@ class EvalConfig(BaseModel):
 
         if self.skills and not self.skills.skills_dir.exists():
             msg = f"Skills directory not found: {self.skills.skills_dir}"
+            raise ValueError(msg)
+
+        if self.agent == AgentBackend.GEMINI and self.mode in (
+            EvalMode.MCP,
+            EvalMode.SKILLFLOW_CACHED,
+        ):
+            msg = "Gemini backend does not support MCP-based eval modes"
+            raise ValueError(msg)
+
+        if self.agent == AgentBackend.GEMINI and "/" not in self.model:
+            msg = (
+                "Gemini model must be in 'provider/model' form, "
+                "e.g. google/gemini-3.1-flash-lite"
+            )
             raise ValueError(msg)
 
         return self

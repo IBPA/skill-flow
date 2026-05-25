@@ -5,7 +5,7 @@ Skill discovery and filtering logic for evaluation agents.
 import logging
 from pathlib import Path
 
-from benchmark.agents.base import TASK_NAME_SEPARATOR
+from benchmark.agents.codex_adapter import TASK_NAME_SEPARATOR
 
 
 def extract_task_name_from_trial_dir(trial_dir_name: str) -> str | None:

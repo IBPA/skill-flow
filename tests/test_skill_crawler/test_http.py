@@ -3,6 +3,30 @@
 import pytest
 from skill_crawler.utils.http import RateLimitedClient
 
+# Proxy env vars that httpx reads at client construction (trust_env=True). An
+# ambient SOCKS proxy (e.g. ALL_PROXY=socks5h://...) makes httpx build a SOCKS
+# transport that requires the optional ``socksio`` package, breaking these
+# unit tests even though they use a mocked transport. Strip them for isolation.
+_PROXY_ENV_VARS = (
+    "ALL_PROXY",
+    "all_proxy",
+    "HTTP_PROXY",
+    "http_proxy",
+    "HTTPS_PROXY",
+    "https_proxy",
+    "FTP_PROXY",
+    "ftp_proxy",
+    "NO_PROXY",
+    "no_proxy",
+)
+
+
+@pytest.fixture(autouse=True)
+def _no_proxy_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure ambient proxy env vars do not influence the httpx client."""
+    for var in _PROXY_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+
 
 class TestRateLimitedClientInit:
     """Test RateLimitedClient initialization."""
