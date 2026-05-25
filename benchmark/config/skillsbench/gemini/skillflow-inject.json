@@ -1,6 +1,6 @@
 {
   "jobs_dir": "outputs/evaluation",
-  "model": "google/gemini-2.5-flash",
+  "model": "google/gemini-3.1-flash-lite",
   "agent": "gemini",
   "selector_cache": "outputs/experiments/selector_cache_gpt-4o-mini-top10.json",
   "tasks_dir_for_skills": "integration/skillsbench/tasks",

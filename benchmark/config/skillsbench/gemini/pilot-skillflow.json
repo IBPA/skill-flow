@@ -2,6 +2,9 @@
   "jobs_dir": "outputs/evaluation",
   "model": "google/gemini-3.1-flash-lite",
   "agent": "gemini",
+  "selector_cache": "outputs/experiments/selector_cache_gpt-4o-mini-top10.json",
+  "tasks_dir_for_skills": "integration/skillsbench/tasks",
+  "corpus_dir": "data/skills",
   "tasks_path": "integration/skillsbench/tasks-no-skills",
   "num_runs": 1,
   "environment": {
@@ -10,7 +13,11 @@
   },
   "tasks": {
     "include_tasks": [
-      "mario-coin-counting"
+      "earthquake-plate-calculation",
+      "flood-risk-analysis",
+      "software-dependency-audit",
+      "powerlifting-coef-calc",
+      "econ-detrending-correlation"
     ],
     "exclude_tasks": []
   },
@@ -29,5 +36,5 @@
       "AddTestsDirError"
     ]
   },
-  "job_name": "gemini-pilot-baseline"
+  "job_name": "gemini-pilot-skillflow"
 }

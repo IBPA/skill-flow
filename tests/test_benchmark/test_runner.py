@@ -607,7 +607,7 @@ class TestDisplayFunctions:
         print_multi_config(config)
 
 
-GEMINI_MODEL = "google/gemini-2.5-flash"
+GEMINI_MODEL = "google/gemini-3.1-flash-lite"
 GEMINI_IMPORT = "skillflow_injection_agent:SkillFlowGeminiAgent"
 CODEX_IMPORT = "skillflow_injection_agent:SkillFlowCodexAgent"
 
@@ -690,7 +690,7 @@ class TestGeminiBackend:
     def test_gemini_requires_provider_prefixed_model(self) -> None:
         """Gemini model must be in provider/model form."""
         with pytest.raises(ValidationError, match="provider/model"):
-            make_config(agent=AgentBackend.GEMINI, model="gemini-2.5-flash")
+            make_config(agent=AgentBackend.GEMINI, model="gemini-3.1-flash-lite")
 
     def test_print_config_shows_agent(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Config display surfaces the selected agent backend."""

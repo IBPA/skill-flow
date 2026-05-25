@@ -124,7 +124,7 @@ class EvalConfig(BaseModel):
         if self.agent == AgentBackend.GEMINI and "/" not in self.model:
             msg = (
                 "Gemini model must be in 'provider/model' form, "
-                "e.g. google/gemini-2.5-flash"
+                "e.g. google/gemini-3.1-flash-lite"
             )
             raise ValueError(msg)
 
