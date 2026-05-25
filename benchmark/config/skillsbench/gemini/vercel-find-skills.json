@@ -7,7 +7,7 @@
     "skills_dir": "outputs/vercel-skills/vercel-skillsbench-top1",
     "match_skill_to_task": true
   },
-  "num_runs": 1,
+  "num_runs": 3,
   "environment": {
     "use_daytona": true,
     "n_concurrent": 10

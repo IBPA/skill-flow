@@ -39,9 +39,6 @@ uv run python -m benchmark.scripts.cli run --config benchmark/config/default.jso
 # Run benchmark with the Gemini CLI backend (requires GEMINI_API_KEY)
 uv run python -m benchmark.scripts.cli run --config benchmark/config/skillsbench/gemini/baseline.json
 
-# Pilot the Gemini backend on a handful of tasks to measure request/token budget
-uv run python -m benchmark.scripts.cli run --config benchmark/config/skillsbench/gemini/pilot-baseline.json
-
 # Run tests with coverage
 uv run pytest tests/ -v
 
@@ -152,11 +149,9 @@ skill-flow/
 ├── benchmark/                  # Harbor evaluation framework
 │   ├── config/                 # Benchmark configs (ablation hierarchy)
 │   │   ├── default.json        # SkillsBench baseline — no skills
-│   │   └── skillsbench/        # SkillsBench experiment variants
-│   │       ├── 2-inject-golden.json      # GT skills injected
-│   │       ├── 3-inject-skillflow.json   # SkillFlow-retrieved skills injected
-│   │       ├── 4-mcp-golden.json         # GT skills via MCP
-│   │       └── 5-mcp-skillflow.json      # Live SkillFlow via MCP
+│   │   └── skillsbench/        # SkillsBench experiment variants, per agent backend
+│   │       ├── codex/          # Codex backend (baseline/skillsbench-inject/skillflow-inject[-top1]/vercel)
+│   │       └── gemini/         # Gemini backend (baseline/skillsbench-inject/skillflow-inject/vercel)
 │   ├── core/                   # Core modules
 │   │   ├── config.py           # Configuration models (EvalConfig, SkillsConfig, etc.)
 │   │   ├── runner.py           # Harbor evaluation runner (single + multi-run)
