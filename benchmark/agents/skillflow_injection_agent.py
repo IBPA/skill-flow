@@ -61,6 +61,7 @@ class SkillInjectionMixin(BaseAgent):
         skills_list_file: str | None = None,
         match_skill_to_task: bool = False,
         eval_results: str | None = None,
+        eval_results_top_k: int | None = None,
         selector_cache: str | None = None,
         tasks_dir: str | None = None,
         corpus_dir: str | None = None,
@@ -71,8 +72,12 @@ class SkillInjectionMixin(BaseAgent):
         if sources > 1:
             msg = "At most one of skills_dir, eval_results, or selector_cache"
             raise ValueError(msg)
+        if eval_results_top_k is not None and eval_results_top_k < 1:
+            msg = "eval_results_top_k must be positive when provided"
+            raise ValueError(msg)
 
         self._eval_results = Path(eval_results) if eval_results else None
+        self._eval_results_top_k = eval_results_top_k
         self._selector_cache = Path(selector_cache) if selector_cache else None
         self._tasks_dir = Path(tasks_dir) if tasks_dir else None
         self._corpus_dir = Path(corpus_dir) if corpus_dir else None
@@ -135,7 +140,11 @@ class SkillInjectionMixin(BaseAgent):
             task_name,
             self._corpus_dir,
         )
-        return [s.folder_path for s in resolved]
+        folders = [s.folder_path for s in resolved]
+        top_k = getattr(self, "_eval_results_top_k", None)
+        if top_k is not None:
+            return folders[:top_k]
+        return folders
 
     def _resolve_from_selector_cache(self, task_name: str) -> list[Path]:
         """Resolve skill folders from selector cache JSON."""

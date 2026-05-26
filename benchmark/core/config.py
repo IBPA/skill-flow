@@ -76,6 +76,7 @@ class EvalConfig(BaseModel):
     cached_skillflow: bool = False
     selector_cache: Path | None = None
     eval_results: Path | None = None
+    eval_results_top_k: int | None = None
     tasks_dir_for_skills: Path | None = None
     corpus_dir: Path | None = None
 
@@ -113,6 +114,10 @@ class EvalConfig(BaseModel):
 
         if self.skills and not self.skills.skills_dir.exists():
             msg = f"Skills directory not found: {self.skills.skills_dir}"
+            raise ValueError(msg)
+
+        if self.eval_results_top_k is not None and self.eval_results_top_k < 1:
+            msg = "eval_results_top_k must be positive when provided"
             raise ValueError(msg)
 
         # The Gemini and Claude CLI backends drive a single headless agent run

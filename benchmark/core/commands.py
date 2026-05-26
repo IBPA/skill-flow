@@ -151,6 +151,10 @@ def _build_skillflow_injection_args(config: EvalConfig) -> list[str]:
     args = _injection_agent_args(config)
     if config.eval_results:
         args.extend(["--agent-kwarg", f"eval_results={config.eval_results}"])
+    if config.eval_results_top_k:
+        args.extend(
+            ["--agent-kwarg", f"eval_results_top_k={config.eval_results_top_k}"]
+        )
     if config.selector_cache:
         args.extend(["--agent-kwarg", f"selector_cache={config.selector_cache}"])
     if config.tasks_dir_for_skills:
