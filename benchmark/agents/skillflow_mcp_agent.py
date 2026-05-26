@@ -7,7 +7,7 @@ makes the agent proactively call retrieve_skill.
 
 from typing import Any
 
-from benchmark.agents.codex_adapter import AdaptedCodex, McpServer
+from benchmark.agents.codex_injection_agent import AdaptedCodex, McpServer
 
 
 class SkillFlowMCPAgent(AdaptedCodex):

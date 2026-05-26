@@ -469,7 +469,7 @@ class TestBuildCommands:
         args = build_mode_args(config)
 
         joined = " ".join(args)
-        assert "skillflow_injection_agent:SkillFlowCodexAgent" in joined
+        assert "codex_injection_agent:SkillFlowCodexAgent" in joined
         assert "eval_results=outputs/eval-results.json" in joined
         assert "eval_results_top_k=10" in joined
         assert "tasks_dir=integration/skillsbench/tasks" in joined
@@ -484,7 +484,7 @@ class TestBuildCommands:
         args = build_mode_args(config)
 
         joined = " ".join(args)
-        assert "skillflow_injection_agent:SkillFlowCodexAgent" in joined
+        assert "codex_injection_agent:SkillFlowCodexAgent" in joined
         assert "selector_cache=outputs/cache.json" in joined
         assert "tasks_dir=integration/skillsbench/tasks" in joined
 
@@ -612,8 +612,8 @@ class TestDisplayFunctions:
 
 
 GEMINI_MODEL = "google/gemini-3.1-flash-lite"
-GEMINI_IMPORT = "skillflow_injection_agent:SkillFlowGeminiAgent"
-CODEX_IMPORT = "skillflow_injection_agent:SkillFlowCodexAgent"
+GEMINI_IMPORT = "gemini_injection_agent:SkillFlowGeminiAgent"
+CODEX_IMPORT = "codex_injection_agent:SkillFlowCodexAgent"
 
 
 class TestGeminiBackend:
@@ -718,7 +718,7 @@ class TestClaudeBackendRouting:
         )
         joined = " ".join(build_mode_args(config))
 
-        assert "skillflow_injection_agent:SkillFlowClaudeAgent" in joined
+        assert "claude_injection_agent:SkillFlowClaudeAgent" in joined
         # Codex-only kwargs must not leak into the Claude command.
         assert "version=" not in joined
 
