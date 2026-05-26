@@ -5,6 +5,7 @@ Skill injection logic for uploading skills to evaluation containers.
 import logging
 import shutil
 import tempfile
+from hashlib import blake2s
 from pathlib import Path
 
 from harbor.environments.base import BaseEnvironment
@@ -98,7 +99,7 @@ class TarGzSkillInjector:
             staging_dir: Temporary staging directory.
             logs_dir: Local logs directory for copying.
         """
-        skill_name = skill_folder.name
+        skill_name = self._skill_name(skill_folder, staging_dir)
         self._logger.debug(f"Staging skill: {skill_name}")
 
         # Copy to staging
@@ -111,6 +112,15 @@ class TarGzSkillInjector:
             shutil.copytree(skill_folder, skills_log_dir, dirs_exist_ok=True)
         except PermissionError:
             self._logger.warning(f"Could not copy skill to logs dir: {skill_name}")
+
+    def _skill_name(self, skill_folder: Path, staging_dir: Path) -> str:
+        """Return a collision-free directory name for a staged skill."""
+        name = skill_folder.name
+        if not (staging_dir / name).exists():
+            return name
+
+        digest = blake2s(str(skill_folder).encode(), digest_size=4).hexdigest()
+        return f"{name}-{digest}"
 
     async def _upload_archive(
         self, environment: BaseEnvironment, temp_path: Path
