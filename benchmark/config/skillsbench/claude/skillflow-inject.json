@@ -9,7 +9,7 @@
   "num_runs": 1,
   "environment": {
     "use_daytona": true,
-    "n_concurrent": 5
+    "n_concurrent": 65
   },
   "tasks": {
     "include_tasks": [],

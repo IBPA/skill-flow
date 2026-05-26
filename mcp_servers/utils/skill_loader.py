@@ -205,7 +205,12 @@ def resolve_eval_skill_folders(
         return []
 
     resolved: list[ResolvedSkill] = []
-    retrieved: list[dict[str, object]] = entry.get("retrieved_skills", [])  # type: ignore[assignment]
+    retrieved_raw = entry.get("retrieved_skills") or entry.get("skills") or []
+    retrieved: list[dict[str, object]] = []
+    if isinstance(retrieved_raw, list):
+        for item in retrieved_raw:
+            if isinstance(item, dict):
+                retrieved.append({str(k): v for k, v in item.items()})
 
     for skill in retrieved:
         key = str(skill.get("key", ""))

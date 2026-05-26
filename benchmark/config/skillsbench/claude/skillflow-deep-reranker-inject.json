@@ -2,7 +2,10 @@
   "jobs_dir": "outputs/evaluation",
   "model": "anthropic/claude-haiku-4-5-20251001",
   "agent": "claude",
-  "tasks_path": "integration/skillsbench/tasks",
+  "eval_results": "outputs/pipeline/skillsbench/specificity-v3.0/pipeline-stage3-deep_reranker-top10.json",
+  "tasks_dir_for_skills": "integration/skillsbench/tasks",
+  "corpus_dir": "data/skills",
+  "tasks_path": "integration/skillsbench/tasks-no-skills",
   "num_runs": 1,
   "environment": {
     "use_daytona": true,
