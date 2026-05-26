@@ -4,7 +4,9 @@ import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from benchmark.agents.skillflow_injection_agent import (
+    ClaudeUsageLimitError,
     SkillFlowClaudeAgent,
     SkillInjectionMixin,
 )
@@ -118,3 +120,33 @@ class TestSkillFlowClaudeAgentSetup:
         mirror = [c for c in cmds if "~/.claude/skills" in c]
         assert mirror, "expected a mirror command targeting ~/.claude/skills"
         assert "/logs/agent/skills" in mirror[-1]
+
+
+class TestSkillFlowClaudeAgentUsageLimitGuard:
+    """The run() guard flags usage/rate limits as errors, not reward-0."""
+
+    def _run_with_output(self, tmp_path: Path, cli_output: str) -> None:
+        agent = _make_claude_agent(logs_dir=tmp_path)
+        env = AsyncMock()
+        env.exec = AsyncMock(return_value=MagicMock(stdout=cli_output, return_code=0))
+        with patch.object(ClaudeCode, "run", new_callable=AsyncMock):
+            asyncio.run(agent.run("do it", env, MagicMock()))
+
+    def test_raises_on_rate_limit_error(self, tmp_path: Path) -> None:
+        out = '{"type":"error","error":{"type":"rate_limit_error","message":"x"}}'
+        with pytest.raises(ClaudeUsageLimitError):
+            self._run_with_output(tmp_path, out)
+
+    def test_raises_on_usage_limit_banner(self, tmp_path: Path) -> None:
+        with pytest.raises(ClaudeUsageLimitError):
+            self._run_with_output(tmp_path, "Claude AI usage limit reached")
+
+    def test_no_raise_on_clean_output(self, tmp_path: Path) -> None:
+        # Normal run completes without a limit marker.
+        self._run_with_output(tmp_path, '{"type":"result","is_error":false}')
+
+    def test_no_raise_when_task_mentions_rate_limits(self, tmp_path: Path) -> None:
+        # A task solution discussing rate limits must NOT trip the guard
+        # (the false-positive lesson from the Gemini PubChem case).
+        out = "Added retry logic to handle the PubChem API rate limits gracefully."
+        self._run_with_output(tmp_path, out)

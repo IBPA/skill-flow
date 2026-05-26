@@ -17,6 +17,7 @@ If no source is provided, no skills are injected (baseline mode).
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -299,6 +300,29 @@ class SkillFlowGeminiAgent(SkillInjectionMixin, GeminiCli):
         return str(content)
 
 
+class ClaudeUsageLimitError(RuntimeError):
+    """Raised when Claude Code hits a subscription/API usage or rate limit.
+
+    Surfacing this as an exception makes Harbor record the trial as an infra
+    error (counted in ``n_errors`` / ``exception_stats``) instead of silently
+    scoring it ``reward=0``. The throttled trials can then be re-run after the
+    limit resets via ``retry_tasks`` or by adding ``ClaudeUsageLimitError`` to
+    ``retry.retry_error_types``.
+    """
+
+
+# Claude-specific error markers only -- deliberately NOT a bare "429", since a
+# task's own output can legitimately mention rate limits (false-positive risk).
+_USAGE_LIMIT_RE = re.compile(
+    r"rate_limit_error"
+    r"|usage limit reached"
+    r"|Claude AI usage limit"
+    r"|API Error: Rate limit"
+    r"|\d+-hour limit reached",
+    re.IGNORECASE,
+)
+
+
 class SkillFlowClaudeAgent(SkillInjectionMixin, ClaudeCode):
     """Claude Code agent that injects skills resolved from a configured source.
 
@@ -334,3 +358,33 @@ class SkillFlowClaudeAgent(SkillInjectionMixin, ClaudeCode):
                 f"cp -r {src}/. {self.CLAUDE_SKILLS_DIR}/; fi"
             )
         )
+
+    async def run(
+        self,
+        instruction: str,
+        environment: BaseEnvironment,
+        context: AgentContext,
+    ) -> None:
+        """Run the agent, then fail loudly if Claude hit a usage/rate limit.
+
+        The ``claude`` CLI exits 0 even when a turn fails with a usage-limit
+        error (the error is printed to the stream-json log), so without this
+        check the trial would be scored ``reward=0`` and counted as a genuine
+        task failure. Detecting the limit and raising lets Harbor record it as
+        an infra error instead -- resumable once the limit resets.
+        """
+        await super().run(instruction, environment, context)
+        await self._raise_on_usage_limit(environment)
+
+    async def _raise_on_usage_limit(self, environment: BaseEnvironment) -> None:
+        """Scan the captured CLI output and raise on a usage/rate-limit marker."""
+        result = await environment.exec(
+            command="cat /logs/agent/claude-code.txt 2>/dev/null || true"
+        )
+        text = getattr(result, "stdout", "") or ""
+        if _USAGE_LIMIT_RE.search(text):
+            raise ClaudeUsageLimitError(
+                "Claude Code hit a usage/rate limit during the run; flagging as "
+                "an infra error so it is not scored as reward 0. Re-run this "
+                "trial after the limit resets."
+            )
