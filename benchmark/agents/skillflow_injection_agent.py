@@ -22,6 +22,7 @@ from typing import Any
 
 from harbor.agents.base import BaseAgent
 from harbor.agents.installed.base import ExecInput
+from harbor.agents.installed.claude_code import ClaudeCode
 from harbor.agents.installed.gemini_cli import GeminiCli
 from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
@@ -296,3 +297,40 @@ class SkillFlowGeminiAgent(SkillInjectionMixin, GeminiCli):
         if content is None:
             return ""
         return str(content)
+
+
+class SkillFlowClaudeAgent(SkillInjectionMixin, ClaudeCode):
+    """Claude Code agent that injects skills resolved from a configured source.
+
+    Wraps Harbor's :class:`~harbor.agents.installed.claude_code.ClaudeCode`
+    (which runs Anthropic's ``claude`` CLI headlessly, authenticates via
+    ``ANTHROPIC_API_KEY`` / ``CLAUDE_CODE_OAUTH_TOKEN``, and parses the session
+    into an ATIF trajectory). The model ID is supplied via Harbor's ``--model``
+    flag and must be in ``provider/model`` form, e.g.
+    ``anthropic/claude-haiku-4-5-20251001``. Like the Gemini backend (and unlike
+    Codex), the Claude CLI has no ``reasoning_effort`` setting, so callers should
+    not pass one.
+    """
+
+    # Claude Code discovers personal skills from ``~/.claude/skills`` and its own
+    # run step copies that tree into ``$CLAUDE_CONFIG_DIR/skills`` before launch.
+    CLAUDE_SKILLS_DIR = "~/.claude/skills"
+
+    async def setup(self, environment: BaseEnvironment) -> None:
+        """Inject skills, then mirror them into Claude's native skills dir.
+
+        The shared injector stages skills under ``/logs/agent/skills`` (where the
+        Codex prompt template points the agent). Claude Code instead discovers
+        skills from ``~/.claude/skills`` (which its run step then copies into
+        ``$CLAUDE_CONFIG_DIR/skills``), so copy them there to make injected
+        skills usable via the ``Skill`` tool. A no-op when nothing was injected
+        (e.g. baseline conditions).
+        """
+        await super().setup(environment)
+        src = TarGzSkillInjector.CONTAINER_SKILLS_DIR
+        await environment.exec(
+            command=(
+                f"if [ -d {src} ]; then mkdir -p {self.CLAUDE_SKILLS_DIR} && "
+                f"cp -r {src}/. {self.CLAUDE_SKILLS_DIR}/; fi"
+            )
+        )

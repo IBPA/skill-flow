@@ -24,6 +24,7 @@ class AgentBackend(str, Enum):
 
     CODEX = "codex"
     GEMINI = "gemini"
+    CLAUDE = "claude"
 
 
 class SkillsConfig(BaseModel):
@@ -114,17 +115,22 @@ class EvalConfig(BaseModel):
             msg = f"Skills directory not found: {self.skills.skills_dir}"
             raise ValueError(msg)
 
-        if self.agent == AgentBackend.GEMINI and self.mode in (
+        # The Gemini and Claude CLI backends drive a single headless agent run
+        # per task and do not support the MCP-based eval modes (which are wired
+        # for the Codex CLI only).
+        non_codex_cli = (AgentBackend.GEMINI, AgentBackend.CLAUDE)
+        if self.agent in non_codex_cli and self.mode in (
             EvalMode.MCP,
             EvalMode.SKILLFLOW_CACHED,
         ):
-            msg = "Gemini backend does not support MCP-based eval modes"
+            msg = f"{self.agent.value} backend does not support MCP-based eval modes"
             raise ValueError(msg)
 
-        if self.agent == AgentBackend.GEMINI and "/" not in self.model:
+        if self.agent in non_codex_cli and "/" not in self.model:
             msg = (
-                "Gemini model must be in 'provider/model' form, "
-                "e.g. google/gemini-3.1-flash-lite"
+                f"{self.agent.value} model must be in 'provider/model' form, "
+                "e.g. google/gemini-3.1-flash-lite or "
+                "anthropic/claude-haiku-4-5-20251001"
             )
             raise ValueError(msg)
 

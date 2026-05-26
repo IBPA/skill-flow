@@ -80,14 +80,20 @@ def build_mode_args(config: EvalConfig) -> list[str]:
 def _injection_agent_args(config: EvalConfig) -> list[str]:
     """Build the import-path (and Codex version) args for the injection agent.
 
-    Selects the Codex or Gemini injection agent based on the configured backend.
-    The ``version`` kwarg pins the Codex CLI version and is not applicable to
-    Gemini (whose install defaults to the latest published CLI).
+    Selects the Codex, Gemini, or Claude injection agent based on the configured
+    backend. The ``version`` kwarg pins the Codex CLI version and is not
+    applicable to the Gemini/Claude CLIs (whose installs default to the latest
+    published CLI).
     """
     if config.agent == AgentBackend.GEMINI:
         return [
             "--agent-import-path",
             "benchmark.agents.skillflow_injection_agent:SkillFlowGeminiAgent",
+        ]
+    if config.agent == AgentBackend.CLAUDE:
+        return [
+            "--agent-import-path",
+            "benchmark.agents.skillflow_injection_agent:SkillFlowClaudeAgent",
         ]
     return [
         "--agent-import-path",
@@ -100,10 +106,10 @@ def _injection_agent_args(config: EvalConfig) -> list[str]:
 def _add_reasoning_effort(args: list[str], config: EvalConfig) -> None:
     """Add reasoning_effort kwarg if configured (Codex only).
 
-    The Gemini CLI has no reasoning-effort knob, so the kwarg is skipped for
-    that backend.
+    The Gemini and Claude CLIs have no reasoning-effort knob, so the kwarg is
+    applied for the Codex backend only.
     """
-    if config.reasoning_effort and config.agent != AgentBackend.GEMINI:
+    if config.reasoning_effort and config.agent == AgentBackend.CODEX:
         args.extend(["--agent-kwarg", f"reasoning_effort={config.reasoning_effort}"])
 
 
