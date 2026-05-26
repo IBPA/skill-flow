@@ -6,10 +6,10 @@
   "tasks_dir_for_skills": "integration/skillsbench/tasks",
   "corpus_dir": "data/skills",
   "tasks_path": "integration/skillsbench/tasks-no-skills",
-  "num_runs": 3,
+  "num_runs": 1,
   "environment": {
     "use_daytona": true,
-    "n_concurrent": 10
+    "n_concurrent": 15
   },
   "tasks": {
     "include_tasks": [],

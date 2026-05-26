@@ -6,7 +6,7 @@
   "num_runs": 1,
   "environment": {
     "use_daytona": true,
-    "n_concurrent": 10
+    "n_concurrent": 5
   },
   "tasks": {
     "include_tasks": [],

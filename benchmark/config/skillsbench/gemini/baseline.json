@@ -3,7 +3,7 @@
   "model": "google/gemini-3.1-flash-lite",
   "agent": "gemini",
   "tasks_path": "integration/skillsbench/tasks-no-skills",
-  "num_runs": 3,
+  "num_runs": 1,
   "environment": {
     "use_daytona": true,
     "n_concurrent": 10
