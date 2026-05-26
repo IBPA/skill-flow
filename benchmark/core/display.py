@@ -64,6 +64,8 @@ def print_mode_config(config: EvalConfig) -> None:
         path = config.eval_results or config.selector_cache
         print(f"Mode: SKILLFLOW_INJECTION (skill injection from {source})")
         print(f"Source: {path}")
+        if config.eval_results_top_k:
+            print(f"Eval results top-k: {config.eval_results_top_k}")
         print(f"Tasks dir for skills: {config.tasks_dir_for_skills}")
     elif config.mode == EvalMode.SKILLFLOW_CACHED:
         print("Mode: SKILLFLOW_CACHED (pre-computed skills via MCP)")

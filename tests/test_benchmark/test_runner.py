@@ -38,6 +38,7 @@ def make_config(
     cached_skillflow: bool = False,
     selector_cache: Path | None = None,
     eval_results: Path | None = None,
+    eval_results_top_k: int | None = None,
     tasks_dir_for_skills: Path | None = None,
     corpus_dir: Path | None = None,
     agent: AgentBackend = AgentBackend.CODEX,
@@ -58,6 +59,7 @@ def make_config(
         cached_skillflow=cached_skillflow,
         selector_cache=selector_cache,
         eval_results=eval_results,
+        eval_results_top_k=eval_results_top_k,
         tasks_dir_for_skills=tasks_dir_for_skills,
         corpus_dir=corpus_dir,
         skills=skills,
@@ -460,6 +462,7 @@ class TestBuildCommands:
         """Test building mode args for SkillFlow injection from eval results."""
         config = make_config(
             eval_results=Path("outputs/eval-results.json"),
+            eval_results_top_k=10,
             tasks_dir_for_skills=Path("integration/skillsbench/tasks"),
             corpus_dir=Path("data/skills"),
         )
@@ -468,6 +471,7 @@ class TestBuildCommands:
         joined = " ".join(args)
         assert "skillflow_injection_agent:SkillFlowCodexAgent" in joined
         assert "eval_results=outputs/eval-results.json" in joined
+        assert "eval_results_top_k=10" in joined
         assert "tasks_dir=integration/skillsbench/tasks" in joined
         assert "corpus_dir=data/skills" in joined
 

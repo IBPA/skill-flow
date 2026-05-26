@@ -1,15 +1,16 @@
 {
   "jobs_dir": "outputs/evaluation",
-  "model": "anthropic/claude-haiku-4-5-20251001",
-  "agent": "claude",
-  "eval_results": "outputs/pipeline/skillsbench/specificity-v3.0/pipeline-stage3-deep_reranker-top10.json",
+  "model": "openai/gpt-5-mini-2025-08-07",
+  "reasoning_effort": "medium",
+  "eval_results": "outputs/experiments/deep-reranker-comparison/baai-bge-reranker-v2-m3-2048chars-q1-max.json",
+  "eval_results_top_k": 10,
   "tasks_dir_for_skills": "integration/skillsbench/tasks",
   "corpus_dir": "data/skills",
   "tasks_path": "integration/skillsbench/tasks-no-skills",
   "num_runs": 1,
   "environment": {
     "use_daytona": true,
-    "n_concurrent": 65
+    "n_concurrent": 15
   },
   "tasks": {
     "include_tasks": [],
