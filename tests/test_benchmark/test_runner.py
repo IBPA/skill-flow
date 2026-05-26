@@ -699,3 +699,34 @@ class TestGeminiBackend:
         out = capsys.readouterr().out
 
         assert "Agent: gemini" in out
+
+
+class TestClaudeBackendRouting:
+    """Routing of the Claude backend through build_mode_args."""
+
+    def test_claude_injection_uses_claude_agent(self) -> None:
+        config = make_config(
+            agent=AgentBackend.CLAUDE,
+            model="anthropic/claude-haiku-4-5-20251001",
+            eval_results=Path("outputs/eval-results.json"),
+            tasks_dir_for_skills=Path("integration/skillsbench/tasks"),
+            corpus_dir=Path("data/skills"),
+        )
+        joined = " ".join(build_mode_args(config))
+
+        assert "skillflow_injection_agent:SkillFlowClaudeAgent" in joined
+        # Codex-only kwargs must not leak into the Claude command.
+        assert "version=" not in joined
+
+    def test_claude_skips_reasoning_effort(self) -> None:
+        config = make_config(
+            agent=AgentBackend.CLAUDE,
+            model="anthropic/claude-haiku-4-5-20251001",
+            reasoning_effort="high",
+            eval_results=Path("outputs/eval-results.json"),
+            tasks_dir_for_skills=Path("integration/skillsbench/tasks"),
+            corpus_dir=Path("data/skills"),
+        )
+        joined = " ".join(build_mode_args(config))
+
+        assert "reasoning_effort" not in joined
