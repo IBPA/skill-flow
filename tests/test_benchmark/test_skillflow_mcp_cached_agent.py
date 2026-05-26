@@ -76,6 +76,49 @@ class TestSkillFlowMCPCachedAgentSetup:
             asyncio.run(agent.setup(environment))
             mock_notify.assert_called_once_with("unknown-task", [])
 
+    def test_setup_resolves_unique_truncated_task_prefix(self, tmp_path: Path) -> None:
+        logs_dir = tmp_path / "long-task-prefix__abc123" / "agent"
+        logs_dir.mkdir(parents=True)
+        agent = create_mock_cached_agent(
+            logs_dir=logs_dir,
+            cache={"long-task-prefix-full": ["skillsmp/foo"]},
+        )
+
+        environment = AsyncMock()
+
+        with (
+            patch.object(
+                SkillFlowMCPCachedAgent.__bases__[0], "setup", new_callable=AsyncMock
+            ),
+            patch.object(agent, "_notify_server") as mock_notify,
+        ):
+            asyncio.run(agent.setup(environment))
+            mock_notify.assert_called_once_with("long-task-prefix", ["skillsmp/foo"])
+
+    def test_setup_rejects_ambiguous_truncated_task_prefix(
+        self, tmp_path: Path
+    ) -> None:
+        logs_dir = tmp_path / "long-task-prefix__abc123" / "agent"
+        logs_dir.mkdir(parents=True)
+        agent = create_mock_cached_agent(
+            logs_dir=logs_dir,
+            cache={
+                "long-task-prefix-one": ["skillsmp/foo"],
+                "long-task-prefix-two": ["skillsmp/bar"],
+            },
+        )
+
+        environment = AsyncMock()
+
+        with (
+            patch.object(
+                SkillFlowMCPCachedAgent.__bases__[0], "setup", new_callable=AsyncMock
+            ),
+            patch.object(agent, "_notify_server") as mock_notify,
+        ):
+            asyncio.run(agent.setup(environment))
+            mock_notify.assert_called_once_with("long-task-prefix", [])
+
     def test_setup_skips_when_no_task_name(self, tmp_path: Path) -> None:
         logs_dir = tmp_path / "no-separator" / "agent"
         logs_dir.mkdir(parents=True)
