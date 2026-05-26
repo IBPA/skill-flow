@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from benchmark.agents.codex_adapter import (
+from benchmark.agents.codex_injection_agent import (
     TASK_NAME_SEPARATOR,
     AdaptedCodex,
     McpServer,

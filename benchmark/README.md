@@ -110,8 +110,10 @@ benchmark/
 │   └── mcp-golden.sh                   # Run MCP golden-skills experiment
 ├── third_party/                       # External integrations (Vercel baseline)
 └── agents/
-    ├── base.py                         # AdaptedCodex (shared reasoning_effort)
-    ├── skillflow_injection_agent.py    # SkillFlow injection mode
+    ├── codex_injection_agent.py        # Codex adapter + SkillFlow injection agent
+    ├── gemini_injection_agent.py       # Gemini SkillFlow injection agent
+    ├── claude_injection_agent.py       # Claude SkillFlow injection agent
+    ├── skill_injection_mixin.py        # Shared skill resolution/injection logic
     ├── skillflow_mcp_agent.py          # SkillFlow MCP mode
     ├── skillflow_mcp_cached_agent.py   # SkillFlow MCP cached mode
     ├── skills/                         # Skill management (manager.py, injector.py)

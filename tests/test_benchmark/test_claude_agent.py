@@ -5,11 +5,11 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from benchmark.agents.skillflow_injection_agent import (
+from benchmark.agents.claude_injection_agent import (
     ClaudeUsageLimitError,
     SkillFlowClaudeAgent,
-    SkillInjectionMixin,
 )
+from benchmark.agents.skill_injection_mixin import SkillInjectionMixin
 from benchmark.agents.skills import SkillManager, TarGzSkillInjector
 from harbor.agents.installed.claude_code import ClaudeCode
 

@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from benchmark.agents.skillflow_injection_agent import SkillFlowCodexAgent
+from benchmark.agents.codex_injection_agent import SkillFlowCodexAgent
 from benchmark.agents.skills.injector import TarGzSkillInjector
 
 

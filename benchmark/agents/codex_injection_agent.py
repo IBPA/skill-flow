@@ -1,6 +1,4 @@
-"""
-Shared base class and utilities for evaluation agents.
-"""
+"""Codex backend for SkillFlow evaluation agents."""
 
 import os
 import shlex
@@ -11,9 +9,10 @@ from typing import Any
 from harbor.agents.installed.base import ExecInput
 from harbor.agents.installed.codex import Codex
 from harbor.models.trial.paths import EnvironmentPaths
+from mcp_servers.utils.skill_loader import resolve_eval_skill_folders
 
-# Separator used in trial directory names: "task-name__hash"
-TASK_NAME_SEPARATOR = "__"
+from benchmark.agents.constants import TASK_NAME_SEPARATOR
+from benchmark.agents.skill_injection_mixin import SkillInjectionMixin
 
 
 @dataclass(frozen=True)
@@ -25,16 +24,12 @@ class McpServer:
 
 
 def get_project_root() -> Path:
-    """Get the project root directory (skill-flow/)."""
+    """Get the project root directory."""
     return Path(__file__).parent.parent.parent
 
 
 class AdaptedCodex(Codex):
-    """
-    Shared base class for evaluation Codex agents.
-
-    Provides common utilities for template rendering and AGENTS.md upload.
-    """
+    """Shared base class for evaluation Codex agents."""
 
     def __init__(
         self,
@@ -80,11 +75,7 @@ class AdaptedCodex(Codex):
         return "\n".join(lines)
 
     def create_run_agent_commands(self, instruction: str) -> list[ExecInput]:
-        """
-        Create commands to run the Codex agent.
-
-        Optionally includes reasoning_effort config if specified.
-        """
+        """Create commands to run the Codex agent."""
         escaped_instruction = shlex.quote(instruction)
 
         if not self.model_name:
@@ -115,3 +106,31 @@ EOF
                 env=env,
             ),
         ]
+
+
+class SkillFlowCodexAgent(SkillInjectionMixin, AdaptedCodex):
+    """Codex CLI agent that injects skills resolved from a configured source."""
+
+    def _resolve_from_eval_results(self, task_name: str) -> list[Path]:
+        """Resolve skill folders via the Codex module namespace."""
+        assert self._eval_results
+        resolved = resolve_eval_skill_folders(
+            self._eval_results,
+            self._tasks_dir or Path(),
+            task_name,
+            self._corpus_dir,
+        )
+        folders = [s.folder_path for s in resolved]
+        top_k = getattr(self, "_eval_results_top_k", None)
+        if top_k is not None:
+            return folders[:top_k]
+        return folders
+
+
+__all__ = [
+    "TASK_NAME_SEPARATOR",
+    "AdaptedCodex",
+    "McpServer",
+    "SkillFlowCodexAgent",
+    "get_project_root",
+]

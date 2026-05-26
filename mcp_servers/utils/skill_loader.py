@@ -166,6 +166,45 @@ def _resolve_skill_folder(
     return skill_name, folder
 
 
+def find_matching_task_id(task_ids: list[str], task_name: str) -> str | None:
+    """Find an exact task ID, falling back to a unique shortened prefix."""
+    if task_name in task_ids:
+        return task_name
+
+    prefix_matches = [task_id for task_id in task_ids if task_id.startswith(task_name)]
+    if len(prefix_matches) == 1:
+        logger.warning(
+            "Task '%s' matched task_id by unique prefix: '%s'",
+            task_name,
+            prefix_matches[0],
+        )
+        return prefix_matches[0]
+
+    if len(prefix_matches) > 1:
+        logger.warning(
+            "Task '%s' matched multiple task_id prefixes: %s",
+            task_name,
+            prefix_matches,
+        )
+
+    return None
+
+
+def _find_task_result(
+    task_results: list[dict[str, object]], task_name: str
+) -> dict[str, object] | None:
+    """Find a task result by exact task ID or unique shortened prefix.
+
+    Harbor trial directories may shorten long task names before appending the
+    trial hash, while SkillFlow eval outputs store the full task_id.
+    """
+    entries = {
+        str(t["task_id"]): t for t in task_results if isinstance(t.get("task_id"), str)
+    }
+    matched_task_id = find_matching_task_id(list(entries), task_name)
+    return entries.get(matched_task_id) if matched_task_id is not None else None
+
+
 def resolve_eval_skill_folders(
     eval_results_path: Path,
     tasks_dir: Path,
@@ -196,10 +235,7 @@ def resolve_eval_skill_folders(
         data = json.load(f)
 
     task_results: list[dict[str, object]] = data.get("task_results", [])
-    entry = next(
-        (t for t in task_results if t.get("task_id") == task_name),
-        None,
-    )
+    entry = _find_task_result(task_results, task_name)
     if entry is None:
         logger.warning("Task '%s' not found in eval results", task_name)
         return []
