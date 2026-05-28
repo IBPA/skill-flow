@@ -19,7 +19,7 @@ import faiss
 import numpy as np
 
 from skill_flow.corpus.loader import load_content
-from skill_flow.corpus.splitter import split_skill_sections
+from skill_flow.corpus.splitter import safe_section_text, split_skill_sections
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -45,8 +45,9 @@ def _write_subdir(
     sub_dir = parent_dir / section
     sub_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Encoding %d %s sections …", len(texts), section)
-    embeddings = encoder.encode_documents(texts, batch_size=batch_size)
+    safe_texts = [safe_section_text(t) for t in texts]
+    logger.info("Encoding %d %s sections …", len(safe_texts), section)
+    embeddings = encoder.encode_documents(safe_texts, batch_size=batch_size)
 
     dim = embeddings.shape[1]
     logger.info("Building FAISS IndexFlatIP for %s (dim=%d) …", section, dim)

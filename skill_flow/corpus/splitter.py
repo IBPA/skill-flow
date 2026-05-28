@@ -14,6 +14,13 @@ import re
 # Frontmatter is fenced by ``---`` lines per Anthropic SKILL.md convention.
 # DOTALL so ``.`` matches the YAML body's newlines; non-greedy so the second
 # fence stops at the first occurrence.
+# Sentinel returned by :func:`safe_section_text` for empty sections. Causal-LM
+# encoders (e.g. bge-code-v1, Qwen2 backbone) crash with ``cannot reshape
+# tensor of 0 elements`` when the tokenizer produces a zero-length sequence
+# for an empty string, so callers must substitute this before encoding.
+EMPTY_SECTION_SENTINEL = "[empty]"
+
+
 _FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)$", re.DOTALL)
 
 # Fenced code blocks: opening ``` plus an optional language tag, then body,
@@ -47,3 +54,8 @@ def split_skill_sections(md: str) -> tuple[str, str, str]:
     prose = re.sub(r"\n{3,}", "\n\n", prose).strip()
 
     return yaml, prose, code
+
+
+def safe_section_text(text: str) -> str:
+    """Return *text* or :data:`EMPTY_SECTION_SENTINEL` if empty after strip."""
+    return text if text.strip() else EMPTY_SECTION_SENTINEL

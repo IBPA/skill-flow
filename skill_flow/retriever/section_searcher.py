@@ -14,7 +14,7 @@ import logging
 from pathlib import Path
 
 from skill_flow.config import RetrieverConfig, SectionConfig
-from skill_flow.corpus.splitter import split_skill_sections
+from skill_flow.corpus.splitter import safe_section_text, split_skill_sections
 from skill_flow.index.encoder import Encoder
 from skill_flow.reranker.reranker import aggregate_scores
 from skill_flow.retriever.retriever import IndexSearcher, SearchResult
@@ -128,7 +128,7 @@ class SectionSearcher:
             yaml, prose, code = split_skill_sections(content)
             section_text = {"yaml": yaml, "prose": prose, "code": code}
             for name, searcher in self._sub.items():
-                searcher.augment([key], [section_text[name]])
+                searcher.augment([key], [safe_section_text(section_text[name])])
 
 
 def _maybe_load_json(path: Path) -> dict[str, str]:
