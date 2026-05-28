@@ -51,6 +51,7 @@ def _to_cfg(v: RetrieverVariant) -> RetrieverConfig:
         top_k=v.top_k,
         query_gen=v.query_gen,
         revision=v.revision,
+        max_seq_length=v.max_seq_length,
         sections=v.sections,
         section_aggregation=v.section_aggregation,
         section_pool_size=v.section_pool_size,

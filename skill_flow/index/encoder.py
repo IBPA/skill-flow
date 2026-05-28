@@ -69,6 +69,11 @@ class Encoder:
         self._model: SentenceTransformer = SentenceTransformer(
             self._config.model_name, device=resolved_device, revision=revision
         )
+        # Some long-context encoders (e.g. bge-code-v1, max 32K) default to
+        # sequence lengths that exhaust GPU memory under O(L²) attention even
+        # at small batch sizes. Allow the config to cap it explicitly.
+        if self._config.max_seq_length > 0:
+            self._model.max_seq_length = self._config.max_seq_length
 
     @property
     def max_seq_length(self) -> int:

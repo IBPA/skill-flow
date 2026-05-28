@@ -42,6 +42,7 @@ def _to_retriever_config(sec: SectionConfig) -> RetrieverConfig:
         doc_prompt=sec.doc_prompt,
         batch_size=sec.batch_size,
         revision=sec.revision,
+        max_seq_length=sec.max_seq_length,
     )
 
 

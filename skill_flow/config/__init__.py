@@ -68,6 +68,7 @@ class SectionConfig(BaseModel):
     batch_size: int = 256
     revision: str = ""
     index_dir: str = ""
+    max_seq_length: int = 0
 
 
 _VALID_SECTION_AGG = {"rrf", "max", "mean", "sum_norm"}
@@ -83,6 +84,7 @@ class RetrieverConfig(BaseModel):
     query_gen: QueryGenConfig | None = None
     variants: list[dict[str, object]] | None = None
     revision: str = ""
+    max_seq_length: int = 0
     sections: dict[str, SectionConfig] | None = None
     section_aggregation: str = "rrf"
     section_pool_size: int = 1000
@@ -179,6 +181,7 @@ class RetrieverVariant(BaseModel):
     max_content_tokens: int = 0
     query_gen: QueryGenConfig | None = None
     revision: str = ""
+    max_seq_length: int = 0
     sections: dict[str, SectionConfig] | None = None
     section_aggregation: str = "rrf"
     section_pool_size: int = 1000

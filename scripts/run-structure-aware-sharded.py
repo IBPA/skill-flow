@@ -38,6 +38,7 @@ rc = RetrieverConfig(
     query_prompt={query_prompt!r},
     revision={revision!r},
     batch_size={batch_size},
+    max_seq_length={max_seq_length},
 )
 encoder = Encoder(rc)
 build_index(
@@ -62,6 +63,7 @@ rc = RetrieverConfig(
     query_prompt={query_prompt!r},
     revision={revision!r},
     batch_size={batch_size},
+    max_seq_length={max_seq_length},
 )
 encoder = Encoder(rc)
 build_section_indices(
@@ -96,6 +98,7 @@ def _collect_jobs(cfg: dict[str, Any], corpus_path: str) -> list[dict[str, Any]]
                 "revision": v.get("revision", ""),
                 "batch_size": v.get("batch_size", 256),
                 "max_content_tokens": v.get("max_content_tokens", 0),
+                "max_seq_length": v.get("max_seq_length", 0),
                 "output_dir": target,
                 "corpus_path": corpus_path,
             }
@@ -115,6 +118,7 @@ def _collect_jobs(cfg: dict[str, Any], corpus_path: str) -> list[dict[str, Any]]
                     ),
                     "revision": sec.get("revision", ""),
                     "batch_size": sec.get("batch_size", 256),
+                    "max_seq_length": sec.get("max_seq_length", 0),
                     "parent_dir": parent,
                     "corpus_path": corpus_path,
                 }

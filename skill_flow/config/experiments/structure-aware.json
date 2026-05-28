@@ -31,7 +31,9 @@
       "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
       "query_prompt": "",
       "index_dir": "outputs/indices/bge-code-v1-content/",
-      "max_content_tokens": -1,
+      "max_content_tokens": 2048,
+      "max_seq_length": 2048,
+      "batch_size": 8,
       "top_k": 1000,
       "label": "c1-content-bge-code"
     },
@@ -157,6 +159,8 @@
           "model_name": "BAAI/bge-code-v1",
           "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
           "query_prompt": "",
+          "batch_size": 8,
+          "max_seq_length": 2048,
           "index_dir": "outputs/indices/section-mixed/code/"
         }
       }
@@ -183,6 +187,8 @@
           "model_name": "BAAI/bge-code-v1",
           "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
           "query_prompt": "",
+          "batch_size": 8,
+          "max_seq_length": 2048,
           "index_dir": "outputs/indices/section-mixed/code/"
         }
       }
@@ -209,6 +215,8 @@
           "model_name": "BAAI/bge-code-v1",
           "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
           "query_prompt": "",
+          "batch_size": 8,
+          "max_seq_length": 2048,
           "index_dir": "outputs/indices/section-mixed/code/"
         }
       }
@@ -235,6 +243,8 @@
           "model_name": "BAAI/bge-code-v1",
           "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
           "query_prompt": "",
+          "batch_size": 8,
+          "max_seq_length": 2048,
           "index_dir": "outputs/indices/section-mixed/code/"
         }
       }
