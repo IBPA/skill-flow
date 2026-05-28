@@ -1,0 +1,1 @@
+Given a coding-agent task description, retrieve agent skill definitions (SKILL.md) providing the procedures or tools needed to complete the task.

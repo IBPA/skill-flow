@@ -1,0 +1,27 @@
+{
+  "name": "reranker-qwen3",
+  "tasks_dir": "integration/skillsbench/tasks",
+  "output_dir": "outputs/experiments/reranker-comparison/",
+  "input_report_path": "outputs/experiments/retriever-union/bge-base-q5-union-tk200.json",
+  "index_dir": "outputs/indices/bge-base/",
+  "cache_dir": "outputs/experiments/querygen-v2-cache/",
+  "rerankers": [
+    {
+      "enabled": true,
+      "model_name": "Qwen/Qwen3-Reranker-0.6B",
+      "input_top_k": 1000,
+      "batch_size": 16,
+      "max_content_chars": 1024,
+      "query_gen": {
+        "enabled": true,
+        "model": "gpt-4o-mini",
+        "system_prompt": "You are a search query generator. Given a detailed task instruction for a coding agent, generate a concise search query (1-2 sentences, under 200 characters) that captures the core technical skill needed. Focus on the primary technology, tool, or technique required. Omit file paths, specific data values, and implementation details.",
+        "multi_query_prompt": "skill_flow/query_gen/instructions/multi_v2.txt",
+        "max_tokens": 200,
+        "temperature": 0.0,
+        "num_queries": 1,
+        "aggregation": "max"
+      }
+    }
+  ]
+}
