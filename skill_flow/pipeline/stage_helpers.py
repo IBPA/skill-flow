@@ -15,6 +15,7 @@ from skill_flow.retriever.multi_search import (
     union_from_collected,
 )
 from skill_flow.retriever.retriever import IndexSearcher
+from skill_flow.retriever.section_searcher import SectionSearcher
 
 from .eval_hooks import (
     build_selector_task_result,
@@ -49,9 +50,11 @@ logger = logging.getLogger(__name__)
 
 
 def build_searcher(config: RetrieverConfig, index_dir: Path) -> Searcher:
-    """Build IndexSearcher or BM25Searcher from config."""
+    """Build IndexSearcher, BM25Searcher, or SectionSearcher from config."""
     if config.retriever_type == "bm25":
         return BM25Searcher.from_index_dir(index_dir, config)
+    if config.retriever_type == "section":
+        return SectionSearcher.from_config(config)
     encoder = Encoder(config)
     return IndexSearcher(index_dir, encoder, config)
 
