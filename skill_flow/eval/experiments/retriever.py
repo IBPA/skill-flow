@@ -50,10 +50,17 @@ def _to_cfg(v: RetrieverVariant) -> RetrieverConfig:
         retriever_type=v.retriever_type,
         top_k=v.top_k,
         query_gen=v.query_gen,
+        revision=v.revision,
+        sections=v.sections,
+        section_aggregation=v.section_aggregation,
+        section_pool_size=v.section_pool_size,
     )
 
 
 def _ensure_index(variant: RetrieverVariant, corpus_path: str) -> None:
+    if variant.retriever_type == "section":
+        _ensure_section_indices(variant)
+        return
     idx = Path(variant.index_dir)
     if variant.retriever_type == "bm25":
         if not (idx / "skill_ids.json").exists():
@@ -76,9 +83,37 @@ def _ensure_index(variant: RetrieverVariant, corpus_path: str) -> None:
     )
 
 
+def _ensure_section_indices(variant: RetrieverVariant) -> None:
+    """For a section variant, verify all three sub-indices exist.
+
+    Section indices are heavyweight to build (~10-20 min each on a single
+    GPU) and we want explicit, sharded builds via
+    ``scripts/run-structure-aware-sharded.py``. Mirror the BM25 path: if any
+    sub-index is missing, raise rather than build inline.
+    """
+    if not variant.sections:
+        msg = "section retriever_type requires non-empty `sections` mapping"
+        raise ValueError(msg)
+    missing: list[str] = []
+    for name, sec in variant.sections.items():
+        sub = Path(sec.index_dir)
+        if not (sub / "faiss.index").exists():
+            missing.append(f"{name}@{sub}")
+    if missing:
+        msg = (
+            "Missing section sub-indices: "
+            + ", ".join(missing)
+            + ". Build them with scripts/run-structure-aware-sharded.py."
+        )
+        raise FileNotFoundError(msg)
+
+
 def _retriever_label(v: RetrieverVariant, inc: list[str] | None = None) -> str:
-    base = slug(Path(v.index_dir).name)
-    label = f"bm25-{base}" if v.retriever_type == "bm25" else base
+    if v.label:
+        label = slug(v.label)
+    else:
+        base = slug(Path(v.index_dir).name)
+        label = f"bm25-{base}" if v.retriever_type == "bm25" else base
     qg = v.query_gen
     if qg and qg.enabled and isinstance(qg.num_queries, int):
         label = f"{label}-q{qg.num_queries}-{qg.aggregation}"
@@ -118,7 +153,9 @@ def _with_aggregation(v: RetrieverVariant, agg: str) -> RetrieverVariant:
 
 
 def _cfg_dict(
-    v: RetrieverVariant, c: RetrieverExperimentConfig, out: Path,
+    v: RetrieverVariant,
+    c: RetrieverExperimentConfig,
+    out: Path,
 ) -> dict[str, object]:
     return {
         "tasks_dir": c.tasks_dir,
@@ -164,7 +201,11 @@ def _score_grid(
         ]
         trs.append(
             build_task_result(
-                task, ranked, ks, retrieval_query=rq, retrieval_queries=pq,
+                task,
+                ranked,
+                ks,
+                retrieval_query=rq,
+                retrieval_queries=pq,
                 elapsed_ms=elapsed_ms,
             )
         )
@@ -179,8 +220,16 @@ def _score_grid(
             ao = out_dir / f"{al}.json"
             ac = _cfg_dict(av, cfg, ao)
             rpt = reaggregate_report(
-                first_rpt, agg, gt_map, ks, n_total, n_skip, n_inj,
-                ac, ao, "retrieval_query",
+                first_rpt,
+                agg,
+                gt_map,
+                ks,
+                n_total,
+                n_skip,
+                n_inj,
+                ac,
+                ao,
+                "retrieval_query",
             )
             results.append((al, rpt))
 
@@ -207,8 +256,11 @@ def _union_grid(
         for task, collected, rq, elapsed_ms in cache:
             trs.append(
                 build_task_result(
-                    task, union_from_collected(collected, tkpq), uks,
-                    retrieval_query=rq, elapsed_ms=elapsed_ms,
+                    task,
+                    union_from_collected(collected, tkpq),
+                    uks,
+                    retrieval_query=rq,
+                    elapsed_ms=elapsed_ms,
                 )
             )
         rpt = build_report(trs, n_total, n_skip, n_inj, uks, cd)
@@ -247,7 +299,17 @@ def _run_grid(
     sa = [a for a in aggs if a != "union"]
     if sa:
         _score_grid(
-            exp, sa, tc, tasks, cfg, out_dir, ks, nt, len(skipped), len(inj), results,
+            exp,
+            sa,
+            tc,
+            tasks,
+            cfg,
+            out_dir,
+            ks,
+            nt,
+            len(skipped),
+            len(inj),
+            results,
         )
     if "union" in aggs:
         _union_grid(exp, tc, cfg, out_dir, nt, len(skipped), len(inj), results)
@@ -285,13 +347,15 @@ def run_experiment(cfg: RetrieverExperimentConfig) -> list[tuple[str, EvalReport
 
 def print_comparison(results: list[tuple[str, EvalReport]]) -> None:
     """Print a comparison table of retriever results."""
-    ks = [1, 5, 10, 100]
-    h = f"{'Model':<25} {'MRR':>7}"
+    ks = [1, 5, 10, 100, 1000]
+    name_width = max((len(lbl) for lbl, _ in results), default=25)
+    name_width = max(name_width, 25)
+    h = f"{'Model':<{name_width}} {'MRR':>7}"
     h += "".join(f" {'R@' + str(k):>7}" for k in ks)
     sep = "=" * len(h)
     print(f"\n{sep}\n{h}\n{'-' * len(h)}")
     for lbl, rpt in results:
         s = rpt.summary
         vals = " ".join(f"{s.mean_recall_at.get(k, 0.0):>7.4f}" for k in ks)
-        print(f"{lbl:<25} {s.mrr:>7.4f} {vals}")
+        print(f"{lbl:<{name_width}} {s.mrr:>7.4f} {vals}")
     print(sep)

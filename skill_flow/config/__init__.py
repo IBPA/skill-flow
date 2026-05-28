@@ -59,15 +59,41 @@ class QueryGenConfig(BaseModel):
         return v
 
 
+class SectionConfig(BaseModel):
+    """Encoder + index for one section in a 3-way structure-aware retriever."""
+
+    model_name: str = "BAAI/bge-base-en-v1.5"
+    query_prompt: str = "Represent this sentence for searching relevant passages: "
+    doc_prompt: str = ""
+    batch_size: int = 256
+    revision: str = ""
+    index_dir: str = ""
+
+
+_VALID_SECTION_AGG = {"rrf", "max", "mean", "sum_norm"}
+
+
 class RetrieverConfig(BaseModel):
     model_name: str = "BAAI/bge-base-en-v1.5"
     query_prompt: str = "Represent this sentence for searching relevant passages: "
     doc_prompt: str = ""
-    retriever_type: Literal["dense", "bm25"] = "dense"
+    retriever_type: Literal["dense", "bm25", "section"] = "dense"
     batch_size: int = 256
     top_k: int = 100
     query_gen: QueryGenConfig | None = None
     variants: list[dict[str, object]] | None = None
+    revision: str = ""
+    sections: dict[str, SectionConfig] | None = None
+    section_aggregation: str = "rrf"
+    section_pool_size: int = 1000
+
+    @field_validator("section_aggregation")
+    @classmethod
+    def _validate_section_aggregation(cls, v: str) -> str:
+        if v not in _VALID_SECTION_AGG:
+            msg = f"section_aggregation must be one of {_VALID_SECTION_AGG}, got {v!r}"
+            raise ValueError(msg)
+        return v
 
 
 class RerankerConfig(BaseModel):
@@ -142,7 +168,7 @@ class RetrieverVariant(BaseModel):
     """Configuration for a single retriever in an experiment."""
 
     enabled: bool = True
-    retriever_type: Literal["dense", "bm25"] = "dense"
+    retriever_type: Literal["dense", "bm25", "section"] = "dense"
     model_name: str = "BAAI/bge-base-en-v1.5"
     query_prompt: str = "Represent this sentence for searching relevant passages: "
     doc_prompt: str = ""
@@ -152,6 +178,11 @@ class RetrieverVariant(BaseModel):
     index_dir: str = "outputs/indices/"
     max_content_tokens: int = 0
     query_gen: QueryGenConfig | None = None
+    revision: str = ""
+    sections: dict[str, SectionConfig] | None = None
+    section_aggregation: str = "rrf"
+    section_pool_size: int = 1000
+    label: str = ""
 
 
 class RetrieverExperimentConfig(BaseModel):
