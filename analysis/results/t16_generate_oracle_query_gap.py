@@ -190,35 +190,50 @@ def collect(
     return rows
 
 
-_BUCKETS: list[tuple[str, Callable[[OracleRow], bool]]] = [
+# Mutually exclusive rank buckets that partition every oracle exactly once.
+_PARTITION_BUCKETS: list[tuple[str, Callable[[OracleRow], bool]]] = [
     ("Top-5 (rank 1-5)", lambda r: r.rank is not None and r.rank <= 5),
     ("Top-100 (rank 6-100)", lambda r: r.rank is not None and 5 < r.rank <= 100),
     (
         "Worst-ranked (rank > 100 or missing)",
         lambda r: r.rank is None or r.rank > 100,
     ),
-    ("Missing from top-1000", lambda r: r.rank is None or r.rank > 1000),
 ]
+
+# Reported separately as a subset of the worst-ranked bucket, not a partition
+# cell -- listing it as a fourth row would make the bucket counts appear to sum
+# to more than the oracle total.
+_SUBSET_BUCKET: tuple[str, Callable[[OracleRow], bool]] = (
+    "Missing from top-1000",
+    lambda r: r.rank is None or r.rank > 1000,
+)
+
+
+def _bucket_stat(
+    name: str, pred: Callable[[OracleRow], bool], rows: list[OracleRow]
+) -> dict[str, object]:
+    """Out-of-query rate for the oracles matching *pred*."""
+    bucket = [r for r in rows if pred(r)]
+    n = len(bucket)
+    if n == 0:
+        return {"bucket": name, "n_oracles": 0, "pct_out_of_query": 0.0}
+    n_out = sum(1 for r in bucket if not r.in_query)
+    return {
+        "bucket": name,
+        "n_oracles": n,
+        "pct_out_of_query": round(100.0 * n_out / n, 1),
+    }
 
 
 def bucket_summary(rows: list[OracleRow]) -> list[dict[str, object]]:
-    """Aggregate rows into the rank-bucket table the rebuttal cites."""
-    out: list[dict[str, object]] = []
-    for name, pred in _BUCKETS:
-        bucket = [r for r in rows if pred(r)]
-        n = len(bucket)
-        if n == 0:
-            out.append({"bucket": name, "n_oracles": 0, "pct_out_of_query": 0.0})
-            continue
-        n_out = sum(1 for r in bucket if not r.in_query)
-        out.append(
-            {
-                "bucket": name,
-                "n_oracles": n,
-                "pct_out_of_query": round(100.0 * n_out / n, 1),
-            }
-        )
-    return out
+    """The three mutually exclusive rank buckets reported in the paper."""
+    return [_bucket_stat(name, pred, rows) for name, pred in _PARTITION_BUCKETS]
+
+
+def subset_summary(rows: list[OracleRow]) -> dict[str, object]:
+    """Missing-from-top-1000 subset of the worst-ranked bucket."""
+    name, pred = _SUBSET_BUCKET
+    return _bucket_stat(name, pred, rows)
 
 
 def example_oracles(rows: list[OracleRow], k: int = 5) -> list[dict[str, object]]:
@@ -275,12 +290,20 @@ def main() -> int:
 
     rows = collect(args.report, args.tasks_dir)
     summary = bucket_summary(rows)
+    subset = subset_summary(rows)
     examples = example_oracles(rows, k=args.n_examples)
 
+    total = len(rows)  # the three buckets partition every oracle exactly once
     print(f"Report: {args.report}")
     print(f"Total oracle-task pairs analyzed: {len(rows)}")
     print()
     print(render_markdown_table(summary))
+    print()
+    print(
+        f"The three buckets partition all {total} oracles. "
+        f"Within the worst-ranked bucket, the {subset['n_oracles']} oracles "
+        f"missing from the top-1000 are {subset['pct_out_of_query']}% out-of-query."
+    )
     print()
     print(f"Top-{args.n_examples} worst-ranked out-of-query oracles:")
     for ex in examples:
@@ -294,6 +317,7 @@ def main() -> int:
                 "report": str(args.report),
                 "n_rows": len(rows),
                 "summary": summary,
+                "subset": subset,
                 "examples": examples,
                 "rows": [r.__dict__ for r in rows],
             },
