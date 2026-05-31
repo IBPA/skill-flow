@@ -121,6 +121,7 @@ def _build_section(
     cond_order: list[tuple[str, str]],
     bench_name: str,
     prefix: str,
+    model: str | None = None,
 ) -> tuple[list[str] | None, list[dict[str, object]]]:
     """Build lines for one benchmark section.
 
@@ -130,7 +131,7 @@ def _build_section(
     # Load conditions in order
     loaded: list[tuple[str, ConditionResults]] = []
     for cond_name, label in cond_order:
-        c = load_condition(eval_dir, cond_name, label, prefix=prefix)
+        c = load_condition(eval_dir, cond_name, label, prefix=prefix, model=model)
         if c.runs:
             loaded.append((label, c))
     if not loaded:
@@ -227,6 +228,7 @@ def _insert_sig(cell: str, sig: str) -> str:
 
 def render_table(
     eval_dir: Path,
+    model: str | None = None,
 ) -> tuple[list[str], list[dict[str, object]]]:
     """Return LaTeX tabular content and collected p-value records."""
     lines: list[str] = [
@@ -246,7 +248,9 @@ def render_table(
         ("sk", _SK_ORDER, "SkillsBench"),
         ("tb", _TB_ORDER, "Terminal-Bench"),
     ]:
-        section, pv_records = _build_section(eval_dir, cond_order, bench_name, prefix)
+        section, pv_records = _build_section(
+            eval_dir, cond_order, bench_name, prefix, model
+        )
         all_pvalues.extend(pv_records)
         if section:
             lines.extend(section)
@@ -291,6 +295,15 @@ def main() -> int:
     )
     parser.add_argument("--eval-dir", type=Path, default=Path("outputs/evaluation"))
     parser.add_argument(
+        "--model",
+        type=str,
+        default="gpt5mini",
+        help=(
+            "Model substring to filter run directories. Table 1 reports the "
+            "Codex GPT-5-mini runs; pass an empty string to disable filtering."
+        ),
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=Path("paper/tables/1_results.tex"),
@@ -302,7 +315,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    table_lines, pvalue_records = render_table(args.eval_dir)
+    model = args.model or None
+    table_lines, pvalue_records = render_table(args.eval_dir, model)
     if args.print_pvalues:
         _print_pvalues(pvalue_records)
         print()
