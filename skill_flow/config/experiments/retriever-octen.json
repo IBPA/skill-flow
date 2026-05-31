@@ -1,0 +1,52 @@
+{
+  "name": "retriever-octen",
+  "tasks_dir": "integration/skillsbench/tasks",
+  "output_dir": "outputs/experiments/retriever-octen/",
+  "corpus_path": "data/skills/",
+  "cache_dir": "outputs/experiments/retriever-octen/",
+  "retrievers": [
+    {
+      "enabled": true,
+      "retriever_type": "dense",
+      "model_name": "Octen/Octen-Embedding-8B",
+      "revision": "5adcfa292e712091dfc30f0e97f0b2282e6cc66c",
+      "query_prompt": "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:",
+      "doc_prompt": "- ",
+      "max_seq_length": 512,
+      "batch_size": 4,
+      "index_dir": "outputs/indices/octen-8b/",
+      "top_k": 1000,
+      "label": "octen-8b",
+      "query_gen": {
+        "enabled": true,
+        "model": "gpt-4o-mini",
+        "max_tokens": 200,
+        "temperature": 0.0,
+        "num_queries": 1,
+        "aggregation": "max"
+      }
+    },
+    {
+      "enabled": true,
+      "retriever_type": "dense",
+      "model_name": "Octen/Octen-Embedding-8B",
+      "revision": "5adcfa292e712091dfc30f0e97f0b2282e6cc66c",
+      "query_prompt": "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:",
+      "doc_prompt": "- ",
+      "max_seq_length": 512,
+      "batch_size": 4,
+      "index_dir": "outputs/indices/octen-8b/",
+      "top_k": 1000,
+      "label": "octen-8b",
+      "query_gen": {
+        "enabled": true,
+        "model": "gpt-4o-mini",
+        "max_tokens": 200,
+        "temperature": 0.0,
+        "num_queries": 5,
+        "aggregation": "union",
+        "top_k_per_query": 200
+      }
+    }
+  ]
+}
