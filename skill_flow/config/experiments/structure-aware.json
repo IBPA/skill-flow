@@ -19,7 +19,7 @@
       "retriever_type": "dense",
       "model_name": "BAAI/bge-code-v1",
       "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
-      "query_prompt": "",
+      "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
       "index_dir": "outputs/indices/bge-code-v1/",
       "top_k": 1000,
       "label": "c2-desc-bge-code"
@@ -29,7 +29,7 @@
       "retriever_type": "dense",
       "model_name": "BAAI/bge-code-v1",
       "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
-      "query_prompt": "",
+      "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
       "index_dir": "outputs/indices/bge-code-v1-content/",
       "max_content_tokens": 2048,
       "max_seq_length": 2048,
@@ -158,7 +158,7 @@
         "code": {
           "model_name": "BAAI/bge-code-v1",
           "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
-          "query_prompt": "",
+          "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
           "batch_size": 8,
           "max_seq_length": 2048,
           "index_dir": "outputs/indices/section-mixed/code/"
@@ -186,7 +186,7 @@
         "code": {
           "model_name": "BAAI/bge-code-v1",
           "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
-          "query_prompt": "",
+          "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
           "batch_size": 8,
           "max_seq_length": 2048,
           "index_dir": "outputs/indices/section-mixed/code/"
@@ -214,7 +214,7 @@
         "code": {
           "model_name": "BAAI/bge-code-v1",
           "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
-          "query_prompt": "",
+          "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
           "batch_size": 8,
           "max_seq_length": 2048,
           "index_dir": "outputs/indices/section-mixed/code/"
@@ -242,7 +242,7 @@
         "code": {
           "model_name": "BAAI/bge-code-v1",
           "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
-          "query_prompt": "",
+          "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
           "batch_size": 8,
           "max_seq_length": 2048,
           "index_dir": "outputs/indices/section-mixed/code/"
