@@ -1,0 +1,70 @@
+# AGENTS.md
+
+This file provides guidance to Codex when working with code in this repository.
+
+## General Rules
+
+1. **File size limit**: Do not allow code files to exceed 300 lines. Refactor by splitting into smaller modules.
+2. **No lazy bypasses**: Do not use `# noqa`, `# type: ignore` to bypass errors. Fix the underlying issue.
+3. **Rely on pre-commit hooks**: Pre-commit hooks run on commit (ruff, mypy, bandit) and push (pytest). Only run checks manually when debugging.
+4. **No cheating on test coverage**: Do not lower `--cov-fail-under` threshold or add files to `[tool.coverage.run] omit` to bypass failing coverage. Write proper tests instead.
+5. **Use fixtures in tests**: When config classes have required fields, use fixtures or helper functions (e.g., `make_config()`) to construct test objects.
+6. **Pydantic for all models**: Use Pydantic `BaseModel` consistently — not dataclasses.
+
+## Project Overview
+
+**SkillFlow** is an agent skill retrieval system that enables AI agents to discover and execute skills from online sources. Components (top-level packages):
+
+- **`skill_crawler/`** — Crawls/downloads ~36K agent skills from marketplaces (SkillsMP) into `data/skills/` (Typer CLI: crawl, search, status, validate, dedupe).
+- **`skill_flow/`** — Multi-stage semantic retrieval engine over ~36K skills: FAISS dense/BM25 sparse retrieval → cross-encoder rerank → optional second reranker → optional LLM selector. CLI: `build-index`, `search`, `eval`, `experiment`. Subpackages: `index/` (encoder + builder), `retriever/`, `reranker/`, `selector/`, `query_gen/`, `corpus/`, `config/`, `eval/` (metrics + experiment runners).
+- **`benchmark/`** — Harbor-based benchmarking of agents with/without skill augmentation (SkillsBench, Terminal-Bench). `core/` (config, runner, commands), `scripts/cli.py`, `agents/` (Codex + Gemini injection/MCP agents, skill manager/injector), `config/` (ablation hierarchy).
+- **`analysis/`** — Retrieval/benchmark comparisons (`comparison/`), paper table+figure generators (`results/`, numbered `t1_`…/`f2_`…), statistics (`stats/`).
+- **`mcp_servers/`** — MCP server implementations (dummy, SkillsBench golden-skills, live SkillFlow retriever).
+- **`paper/`** — LaTeX source with Overleaf sync; tables generated via `\input{tables/...}`.
+- Supporting: `integration/` (SkillsBench + Terminal-Bench, separate venvs), `tests/`, `docs/`, `scripts/`, `outputs/indices/` (gitignored FAISS artifacts), `jobs/`.
+
+Regenerate this overview or locate files with `ls`/Glob rather than trusting a stale map.
+
+## Commands
+
+```bash
+uv sync                                                      # Install dependencies
+
+uv run python -m skill_flow.cli build-index                  # Build FAISS index (one-time, needs data/skills/)
+uv run python -m skill_flow.cli search --query "..." --rerank  # Search (--rerank enables cross-encoder Stage 2)
+uv run python -m skill_flow.cli eval                         # Auto-chained eval (all 4 stages, default_eval.json)
+uv run python -m skill_flow.cli experiment --config skill_flow/config/experiments/retriever-comparison.json --max-tasks 2
+
+uv run python -m benchmark.scripts.cli run --config benchmark/config/default.json  # Benchmark eval (Codex)
+# Gemini backend: --config benchmark/config/skillsbench/gemini/baseline.json (needs GEMINI_API_KEY)
+
+uv run python -m skill_crawler crawl                         # Crawl skills (--source, --dry-run)
+uv run pytest tests/ -v                                      # Tests with coverage
+
+bash analysis/results/generate-paper-assets.sh              # Regenerate paper tables + figures (--tables / --figures)
+bash paper/scripts/push-overleaf.sh                         # One-way push paper/ to Overleaf (--reset on divergence)
+```
+
+Most subcommands have more options (`--help`); the configs under `skill_flow/config/experiments/` and `benchmark/config/` cover the full ablation grid.
+
+## Key Patterns
+
+- **Configuration**: Pydantic models with nested hierarchy (`system`/`index`/`models`) — `skill_flow/config/default.json` for core, `skill_flow/config/default_eval.json` for eval (all stages enabled), `benchmark/config/default.json` + `benchmark/config/skillsbench/` for benchmark eval.
+- **Eval Modes**: Derived from config shape — baseline (no skills field), skills (`skills.skills_dir`), skillflow (`skills.skillflow_peer_url`).
+- **Agent Backends**: `EvalConfig.agent` selects the CLI harness — `codex` (default, GPT-5-mini via `SkillFlowCodexAgent`) or `gemini` (Gemini Flash via `SkillFlowGeminiAgent`, auth `GEMINI_API_KEY`). Both share skill resolution/injection via `SkillInjectionMixin`; `commands.py` picks the import path and omits `reasoning_effort`/Codex `version` for Gemini. Gemini supports baseline/skills(oracle+vercel)/skillflow-injection conditions but not MCP modes (config validation rejects them). Gemini configs live in `benchmark/config/skillsbench/gemini/`; model must be `provider/model` (default `google/gemini-3.1-flash-lite`). Respect AI Studio limits (1K RPM, 2M TPM, 10K RPD) via conservative `environment.n_concurrent` and resume after daily-quota exhaustion (`retry.resume`).
+- **Multi-stage Retrieval**: Stage 1 retrieval via `Searcher` protocol (dense FAISS or BM25 sparse, with optional LLM query generation via `models.retriever.query_gen`) → Stage 2 cross-encoder reranker (`BAAI/bge-reranker-v2-m3`) → optional Stage 3 deep_reranker (same cross-encoder class, configurable independently) → optional Stage 4 LLM selector (binary relevant/not-relevant filtering via OpenAI); `--rerank` enables Stage 2, Stage 3 chains automatically when `models.deep_reranker.enabled`, Stage 4 chains when `models.selector.enabled`.
+- **Searcher Protocol**: `Searcher` in `skill_flow/retriever/protocol.py` defines the shared interface (`search`, `augment`, `add_descriptions`, `add_contents`) implemented by both `IndexSearcher` (dense FAISS) and `BM25Searcher` (rank-bm25 sparse).
+- **Experiments**: `RetrieverExperimentConfig` / `RerankerExperimentConfig` define multi-variant comparisons; `skill_flow.cli experiment` auto-detects type from config (`"retrievers"` vs `"rerankers"` key) and prints a comparison table. Reranker experiments support grid-search aggregation: when `query_gen.aggregation` is a list (e.g. `["max", "mean", "rrf"]`), the cross-encoder scores once and results are re-aggregated per method (no redundant inference). List aggregation is experiment-only; non-experiment eval raises `TypeError` on a list.
+- **Query Generation**: Optional LLM step (`QueryGenerator`) converting verbose task instructions into concise search queries; available for Stage 1 retrieval (`models.retriever.query_gen`, multi-query via `search_multi`) and Stages 2-3 reranking. JSON file caching avoids redundant LLM calls. Multi-query (`num_queries > 1`) produces N facet-focused queries aggregated via `aggregation` (`"max"`/`"mean"`/`"rrf"`, or a list for experiment grid search).
+- **GPU Device Selection**: `pick_device()` in `skill_flow/index/encoder.py` auto-selects the CUDA device with the most free memory; called by default in `Encoder.__init__` when no explicit device is given.
+- **FAISS Index**: Normalized embeddings + `IndexFlatIP` (inner product = cosine similarity). Full SKILL.md content (`skill_contents.json`, persisted at build) threads through the pipeline via `SearchResult.content` for cross-encoder scoring.
+- **Structured Skills**: SKILL.md format with YAML frontmatter for metadata. `SkillRecord` stores metadata only; full content loaded on demand via `load_content()`.
+- **Skill Injection**: tar.gz-based injection of SKILL.md files into Docker containers via `TarGzSkillInjector`.
+- **Job Naming**: Auto-generated as `{benchmark}-{mode}-{skills}-{model}-{effort}-{timestamp}`.
+- **Retriever Eval**: Injects all GT skills into the FAISS index at eval time with task-scoped keys (`skillsbench/{task_id}/{name}`) so each task's exact skill content is evaluated; writes incremental report snapshots after each task. Metrics: recall@k, precision@k, hit@k, MRR.
+- **Auto-chained Eval**: `run_eval()` threads each stage's output path as the next stage's input — no explicit `stage*_report_path` needed for the full pipeline; each `run_*_eval` accepts an optional `prev_output_path` overriding the configured input (falling back to config for standalone use).
+- **Overleaf Sync**: `paper/scripts/push-overleaf.sh` does a one-way subtree push of `paper/` to Overleaf; `--reset` clones, replaces contents, and force-pushes on diverged histories. Requires `OVERLEAF_API_KEY` and `OVERLEAF_REPO_URL` in `.env`.
+
+## Code Standards
+
+Configured in `pyproject.toml`: Python 3.12+; Ruff (E, W, F, I, B, C4, UP, ARG, SIM, TCH, PTH, ERA, PL, RUF); MyPy strict mode; Bandit (excluding tests); Pytest with 80% coverage threshold over `skill_flow/`, `skill_crawler/`, and `benchmark/`.

@@ -16,6 +16,8 @@ import argparse
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from benchmark.core.config import load_config
 from benchmark.core.runner import EvaluationRunner
 
@@ -75,6 +77,10 @@ def create_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     """Main entry point."""
+    # Load .env so API keys (GEMINI_API_KEY, DAYTONA_API_KEY, OPENAI_API_KEY)
+    # are available to the agent subprocess. Existing env vars take precedence.
+    load_dotenv()
+
     parser = create_parser()
     args = parser.parse_args()
 

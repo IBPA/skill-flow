@@ -61,9 +61,19 @@ class Encoder:
     ) -> None:
         self._config = config or RetrieverConfig()
         resolved_device = device if device is not None else pick_device()
+        # ``revision`` pins the HF commit (Bandit B615). Empty string means
+        # "no pin", matching sentence-transformers' default. We pass an
+        # explicit revision when the config carries one so downstream
+        # encoders (e.g. bge-code-v1) are reproducible.
+        revision = self._config.revision or None
         self._model: SentenceTransformer = SentenceTransformer(
-            self._config.model_name, device=resolved_device
+            self._config.model_name, device=resolved_device, revision=revision
         )
+        # Some long-context encoders (e.g. bge-code-v1, max 32K) default to
+        # sequence lengths that exhaust GPU memory under O(L²) attention even
+        # at small batch sizes. Allow the config to cap it explicitly.
+        if self._config.max_seq_length > 0:
+            self._model.max_seq_length = self._config.max_seq_length
 
     @property
     def max_seq_length(self) -> int:

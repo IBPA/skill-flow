@@ -1,28 +1,29 @@
-"""Tests for SkillFlowInjectionAgent."""
+"""Tests for SkillFlowCodexAgent."""
 
 import asyncio
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from benchmark.agents.skillflow_injection_agent import SkillFlowInjectionAgent
+from benchmark.agents.codex_injection_agent import SkillFlowCodexAgent
 from benchmark.agents.skills.injector import TarGzSkillInjector
 
 
 def _create_mock_agent(
     logs_dir: Path | None = None,
     eval_results: str | None = None,
+    eval_results_top_k: int | None = None,
     selector_cache: str | None = None,
     tasks_dir: str = "/tmp/tasks",
     corpus_dir: str | None = None,
-) -> SkillFlowInjectionAgent:
-    """Create a mock SkillFlowInjectionAgent for testing."""
+) -> SkillFlowCodexAgent:
+    """Create a mock SkillFlowCodexAgent for testing."""
     with patch.object(
-        SkillFlowInjectionAgent.__bases__[0],
+        SkillFlowCodexAgent.__bases__[0],
         "__init__",
         lambda self, *args, **kwargs: None,
     ):
-        agent = SkillFlowInjectionAgent.__new__(SkillFlowInjectionAgent)
+        agent = SkillFlowCodexAgent.__new__(SkillFlowCodexAgent)
 
     agent.logger = MagicMock()
     agent.logs_dir = logs_dir or Path("/tmp/test-logs/trial__hash/agent")
@@ -31,6 +32,7 @@ def _create_mock_agent(
     agent.reasoning_effort = None
     agent._mcp_servers = []
     agent._eval_results = Path(eval_results) if eval_results else None
+    agent._eval_results_top_k = eval_results_top_k
     agent._selector_cache = Path(selector_cache) if selector_cache else None
     agent._tasks_dir = Path(tasks_dir)
     agent._corpus_dir = Path(corpus_dir) if corpus_dir else None
@@ -48,13 +50,20 @@ def _write_eval_results(
     path.write_text(json.dumps(data))
 
 
-class TestSkillFlowInjectionAgentInit:
-    """Tests for SkillFlowInjectionAgent initialization."""
+class TestSkillFlowCodexAgentInit:
+    """Tests for SkillFlowCodexAgent initialization."""
 
     def test_eval_results_stored(self) -> None:
         agent = _create_mock_agent(eval_results="/data/results.json")
         assert agent._eval_results == Path("/data/results.json")
         assert agent._selector_cache is None
+
+    def test_eval_results_top_k_stored(self) -> None:
+        agent = _create_mock_agent(
+            eval_results="/data/results.json",
+            eval_results_top_k=10,
+        )
+        assert agent._eval_results_top_k == 10
 
     def test_selector_cache_stored(self) -> None:
         agent = _create_mock_agent(selector_cache="/data/cache.json")
@@ -68,7 +77,7 @@ class TestSkillFlowInjectionAgentInit:
         assert agent._tasks_dir == Path("/data/tasks")
 
 
-class TestSkillFlowInjectionAgentExtractTaskName:
+class TestSkillFlowCodexAgentExtractTaskName:
     """Tests for task name extraction."""
 
     def test_extract_from_trial_dir(self, tmp_path: Path) -> None:
@@ -84,15 +93,15 @@ class TestSkillFlowInjectionAgentExtractTaskName:
         assert agent._extract_task_name() is None
 
 
-class TestSkillFlowInjectionAgentSetup:
-    """Tests for SkillFlowInjectionAgent.setup."""
+class TestSkillFlowCodexAgentSetup:
+    """Tests for SkillFlowCodexAgent.setup."""
 
     def test_setup_calls_parent_setup(self, tmp_path: Path) -> None:
         agent = _create_mock_agent(logs_dir=tmp_path, eval_results="/r.json")
         environment = AsyncMock()
 
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowCodexAgent.__bases__[1], "setup", new_callable=AsyncMock
         ) as mock_super:
             asyncio.run(agent.setup(environment))
             mock_super.assert_called_once_with(environment)
@@ -132,11 +141,41 @@ class TestSkillFlowInjectionAgentSetup:
         environment.upload_file = AsyncMock()
 
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowCodexAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(environment))
 
         assert environment.exec.call_count >= 1
+
+    def test_eval_results_top_k_limits_resolved_skills(self, tmp_path: Path) -> None:
+        tasks_dir = tmp_path / "tasks"
+        for skill_name in ("first", "second"):
+            skill_dir = tasks_dir / "my-task" / "environment" / "skills" / skill_name
+            skill_dir.mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(f"---\nname: {skill_name}\n---\n")
+
+        eval_path = tmp_path / "results.json"
+        _write_eval_results(
+            eval_path,
+            [
+                {
+                    "task_id": "my-task",
+                    "retrieved_skills": [
+                        {"key": "skillsbench/my-task/first"},
+                        {"key": "skillsbench/my-task/second"},
+                    ],
+                }
+            ],
+        )
+        agent = _create_mock_agent(
+            eval_results=str(eval_path),
+            eval_results_top_k=1,
+            tasks_dir=str(tasks_dir),
+        )
+
+        folders = agent._resolve_from_eval_results("my-task")
+
+        assert [folder.name for folder in folders] == ["first"]
 
     def test_setup_injects_from_selector_cache(self, tmp_path: Path) -> None:
         tasks_dir = tmp_path / "tasks"
@@ -162,7 +201,7 @@ class TestSkillFlowInjectionAgentSetup:
         environment.upload_file = AsyncMock()
 
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowCodexAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(environment))
 
@@ -176,7 +215,7 @@ class TestSkillFlowInjectionAgentSetup:
         environment = AsyncMock()
 
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowCodexAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(environment))
 
@@ -202,7 +241,7 @@ class TestSkillFlowInjectionAgentSetup:
         environment = AsyncMock()
 
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowCodexAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(environment))
 

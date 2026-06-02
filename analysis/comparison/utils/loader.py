@@ -220,8 +220,27 @@ def _parse_trajectories(run_dir: Path) -> dict[str, tuple[int, float]]:
 # ------------------------------------------------------------------
 
 
-def discover_runs(eval_dir: Path, condition: str, *, prefix: str = "sk") -> list[Path]:
-    """Find run directories whose extracted condition exactly matches."""
+def discover_runs(
+    eval_dir: Path,
+    condition: str,
+    *,
+    prefix: str = "sk",
+    model: str | None = None,
+) -> list[Path]:
+    """Find run directories whose extracted condition exactly matches.
+
+    Args:
+        eval_dir: Directory holding run subdirectories.
+        condition: Condition name to match (after stripping the model, effort,
+            and timestamp suffixes from the directory name).
+        prefix: Run-directory prefix (``sk`` for SkillsBench, ``tb`` for
+            Terminal-Bench).
+        model: Optional model substring. When set, only run directories whose
+            name contains it are returned. Different models running the same
+            condition (e.g. ``gpt5mini`` vs ``claudehaiku``) extract to the same
+            condition name, so this filter is needed to avoid silently mixing
+            them when an eval directory holds runs from more than one model.
+    """
     pattern = f"{prefix}-{condition}-*"
     return sorted(
         p
@@ -229,6 +248,7 @@ def discover_runs(eval_dir: Path, condition: str, *, prefix: str = "sk") -> list
         if p.is_dir()
         and (p / "result.json").exists()
         and _extract_condition(p.name, prefix) == condition
+        and (model is None or model in p.name)
     )
 
 
@@ -269,9 +289,14 @@ def load_condition(
     label: str,
     *,
     prefix: str = "sk",
+    model: str | None = None,
 ) -> ConditionResults:
-    """Load all runs for a condition and aggregate."""
-    runs = discover_runs(eval_dir, condition, prefix=prefix)
+    """Load all runs for a condition and aggregate.
+
+    ``model`` is an optional substring forwarded to :func:`discover_runs` to
+    restrict loading to a single model's runs (see that function for details).
+    """
+    runs = discover_runs(eval_dir, condition, prefix=prefix, model=model)
     if not runs:
         logger.warning("No runs found for condition '%s' in %s", condition, eval_dir)
 

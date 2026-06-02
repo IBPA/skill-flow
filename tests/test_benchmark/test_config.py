@@ -6,6 +6,7 @@ from typing import Any
 
 import pytest
 from benchmark.core.config import (
+    AgentBackend,
     EnvironmentConfig,
     EvalConfig,
     EvalMode,
@@ -370,3 +371,28 @@ class TestLoadConfig:
         # Should not raise even though legacy peer key exists
         config = load_config(config_file)
         assert config.mode == EvalMode.BASELINE
+
+
+class TestClaudeBackendValidation:
+    """Validation rules specific to the Claude Code backend."""
+
+    def _make_config(self, **overrides: Any) -> EvalConfig:
+        defaults = _make_default_config(
+            agent=AgentBackend.CLAUDE,
+            model="anthropic/claude-haiku-4-5-20251001",
+        )
+        defaults.update(overrides)
+        return EvalConfig(**defaults)
+
+    def test_valid_claude_config(self) -> None:
+        config = self._make_config()
+        assert config.agent == AgentBackend.CLAUDE
+        assert config.mode == EvalMode.BASELINE
+
+    def test_claude_requires_provider_model_form(self) -> None:
+        with pytest.raises(ValidationError, match="provider/model"):
+            self._make_config(model="claude-haiku-4-5-20251001")
+
+    def test_claude_rejects_mcp_mode(self) -> None:
+        with pytest.raises(ValidationError, match="MCP-based eval modes"):
+            self._make_config(mcp_url="http://localhost:9000/mcp")

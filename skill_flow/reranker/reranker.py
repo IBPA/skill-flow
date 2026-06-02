@@ -5,9 +5,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from sentence_transformers import CrossEncoder
-
 from skill_flow.index.encoder import pick_device
+from skill_flow.reranker.backends import RerankerBackend, build_backend
 from skill_flow.retriever.retriever import SearchResult
 
 if TYPE_CHECKING:
@@ -49,8 +48,8 @@ class Reranker:
     def __init__(self, config: RerankerConfig | DeepRerankerConfig) -> None:
         self._config = config
         device = pick_device()
-        logger.info("Loading cross-encoder model: %s on %s", config.model_name, device)
-        self._model = CrossEncoder(config.model_name, device=device)
+        logger.info("Loading reranker model: %s on %s", config.model_name, device)
+        self._model: RerankerBackend = build_backend(config.model_name, str(device))
 
     @staticmethod
     def _truncate(text: str, max_chars: int) -> str:

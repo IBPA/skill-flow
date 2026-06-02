@@ -135,6 +135,17 @@ dmypy.json
 node_modules/
 
 # AI
-_bmad/
-_bmad-output/
 .claude
+
+# Sandbox
+.bash_profile
+.bashrc
+.gitconfig
+.gitmodules
+.idea
+.mcp.json
+.profile
+.ripgreprc
+.vscode
+.zprofile
+.zshrc

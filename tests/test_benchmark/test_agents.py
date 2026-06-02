@@ -5,19 +5,14 @@ import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from benchmark.agents.base import McpServer
-from benchmark.agents.skillflow_injection_agent import SkillFlowInjectionAgent
+from benchmark.agents.codex_injection_agent import McpServer, SkillFlowCodexAgent
 from benchmark.agents.skillflow_mcp_agent import SkillFlowMCPAgent
-from benchmark.agents.skillflow_mcp_cached_agent import (
-    SkillFlowMCPCachedAgent,
-    _derive_base_url,
-)
 from benchmark.agents.skills import SkillManager, TarGzSkillInjector
 from mcp_servers.utils.skill_loader import ResolvedSkill
 
 
-class TestSkillFlowInjectionAgentInit:
-    """Tests for SkillFlowInjectionAgent initialization."""
+class TestSkillFlowCodexAgentInit:
+    """Tests for SkillFlowCodexAgent initialization."""
 
     def test_with_eval_results(self) -> None:
         agent = create_mock_injection_agent(eval_results="/path/eval.json")
@@ -30,8 +25,8 @@ class TestSkillFlowInjectionAgentInit:
         assert agent._eval_results is None
 
 
-class TestSkillFlowInjectionAgentSetup:
-    """Tests for SkillFlowInjectionAgent.setup."""
+class TestSkillFlowCodexAgentSetup:
+    """Tests for SkillFlowCodexAgent.setup."""
 
     def test_setup_resolves_from_eval_results(self, tmp_path: Path) -> None:
         logs_dir = tmp_path / "my-task__abc123" / "agent"
@@ -48,10 +43,10 @@ class TestSkillFlowInjectionAgentSetup:
         mock_resolved = [ResolvedSkill("s1", "", skill_dir)]
         with (
             patch.object(
-                SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+                SkillFlowCodexAgent.__bases__[1], "setup", new_callable=AsyncMock
             ),
             patch(
-                "benchmark.agents.skillflow_injection_agent.resolve_eval_skill_folders",
+                "benchmark.agents.codex_injection_agent.resolve_eval_skill_folders",
                 return_value=mock_resolved,
             ),
         ):
@@ -76,7 +71,7 @@ class TestSkillFlowInjectionAgentSetup:
         env.exec = AsyncMock(return_value=MagicMock(stdout="", return_code=0))
         env.upload_file = AsyncMock()
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowCodexAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(env))
         assert env.exec.call_count > 0
@@ -89,14 +84,14 @@ class TestSkillFlowInjectionAgentSetup:
         )
         env = AsyncMock()
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowCodexAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(env))
         agent.logger.warning.assert_called()
 
 
-class TestSkillFlowInjectionAgentSkillsDir:
-    """Tests for SkillFlowInjectionAgent with skills_dir source."""
+class TestSkillFlowCodexAgentSkillsDir:
+    """Tests for SkillFlowCodexAgent with skills_dir source."""
 
     def test_skills_dir_sets_manager(self, tmp_path: Path) -> None:
         skills_dir = tmp_path / "skills"
@@ -142,7 +137,7 @@ class TestSkillFlowInjectionAgentSkillsDir:
         env.exec = AsyncMock(return_value=MagicMock(stdout="", return_code=0))
         env.upload_file = AsyncMock()
         with patch.object(
-            SkillFlowInjectionAgent.__bases__[0], "setup", new_callable=AsyncMock
+            SkillFlowCodexAgent.__bases__[1], "setup", new_callable=AsyncMock
         ):
             asyncio.run(agent.setup(env))
         assert env.exec.call_count > 0
@@ -198,14 +193,14 @@ def create_mock_injection_agent(
     selector_cache: str | None = None,
     tasks_dir: str | None = None,
     corpus_dir: str | None = None,
-) -> SkillFlowInjectionAgent:
-    """Create a mock SkillFlowInjectionAgent for testing."""
+) -> SkillFlowCodexAgent:
+    """Create a mock SkillFlowCodexAgent for testing."""
     with patch.object(
-        SkillFlowInjectionAgent.__bases__[0],
+        SkillFlowCodexAgent.__bases__[0],
         "__init__",
         lambda self, *args, **kwargs: None,
     ):
-        agent = SkillFlowInjectionAgent.__new__(SkillFlowInjectionAgent)
+        agent = SkillFlowCodexAgent.__new__(SkillFlowCodexAgent)
 
     agent.logger = MagicMock()
     agent.logs_dir = logs_dir or Path("/tmp/test-logs/trial__hash/agent")
@@ -229,111 +224,4 @@ def create_mock_injection_agent(
         )
     else:
         agent._skill_manager = None
-    return agent
-
-
-class TestDeriveBaseUrl:
-    """Tests for _derive_base_url helper."""
-
-    def test_strips_mcp_suffix(self) -> None:
-        assert _derive_base_url("http://host:8765/mcp") == "http://host:8765"
-
-    def test_no_suffix(self) -> None:
-        assert _derive_base_url("http://host:8765") == "http://host:8765"
-
-    def test_ngrok_url(self) -> None:
-        url = "https://abc.ngrok-free.dev/mcp"
-        assert _derive_base_url(url) == "https://abc.ngrok-free.dev"
-
-
-class TestSkillFlowMCPCachedAgentInit:
-    """Tests for SkillFlowMCPCachedAgent initialization."""
-
-    def test_default_server_base_url(self) -> None:
-        agent = create_mock_cached_agent()
-        assert agent._server_base_url == "http://host.docker.internal:8765"
-
-    def test_custom_mcp_url(self) -> None:
-        agent = create_mock_cached_agent(mcp_url="https://abc.ngrok-free.dev/mcp")
-        assert agent._server_base_url == "https://abc.ngrok-free.dev"
-        assert agent._mcp_servers[0].url == "https://abc.ngrok-free.dev/mcp"
-
-
-class TestSkillFlowMCPCachedAgentSetup:
-    """Tests for SkillFlowMCPCachedAgent.setup."""
-
-    def test_setup_calls_notify_server_with_keys(self, tmp_path: Path) -> None:
-        logs_dir = tmp_path / "my-task__abc123" / "agent"
-        logs_dir.mkdir(parents=True)
-        cache = {"my-task": ["skillsmp/foo", "skillsmp/bar"]}
-        agent = create_mock_cached_agent(logs_dir=logs_dir, cache=cache)
-
-        environment = AsyncMock()
-
-        with (
-            patch.object(
-                SkillFlowMCPCachedAgent.__bases__[0], "setup", new_callable=AsyncMock
-            ),
-            patch.object(agent, "_notify_server") as mock_notify,
-        ):
-            asyncio.run(agent.setup(environment))
-            mock_notify.assert_called_once_with(
-                "my-task", ["skillsmp/foo", "skillsmp/bar"]
-            )
-
-    def test_setup_sends_empty_keys_for_unknown_task(self, tmp_path: Path) -> None:
-        logs_dir = tmp_path / "unknown-task__abc123" / "agent"
-        logs_dir.mkdir(parents=True)
-        agent = create_mock_cached_agent(logs_dir=logs_dir, cache={})
-
-        environment = AsyncMock()
-
-        with (
-            patch.object(
-                SkillFlowMCPCachedAgent.__bases__[0], "setup", new_callable=AsyncMock
-            ),
-            patch.object(agent, "_notify_server") as mock_notify,
-        ):
-            asyncio.run(agent.setup(environment))
-            mock_notify.assert_called_once_with("unknown-task", [])
-
-    def test_setup_skips_when_no_task_name(self, tmp_path: Path) -> None:
-        logs_dir = tmp_path / "no-separator" / "agent"
-        logs_dir.mkdir(parents=True)
-        agent = create_mock_cached_agent(logs_dir=logs_dir)
-
-        environment = AsyncMock()
-
-        with (
-            patch.object(
-                SkillFlowMCPCachedAgent.__bases__[0], "setup", new_callable=AsyncMock
-            ),
-            patch.object(agent, "_notify_server") as mock_notify,
-        ):
-            asyncio.run(agent.setup(environment))
-            mock_notify.assert_not_called()
-
-
-def create_mock_cached_agent(
-    logs_dir: Path | None = None,
-    mcp_url: str | None = None,
-    cache: dict[str, list[str]] | None = None,
-) -> SkillFlowMCPCachedAgent:
-    """Create a mock SkillFlowMCPCachedAgent for testing."""
-    with patch.object(
-        SkillFlowMCPCachedAgent.__bases__[0].__bases__[0],
-        "__init__",
-        lambda self, *args, **kwargs: None,
-    ):
-        agent = SkillFlowMCPCachedAgent.__new__(SkillFlowMCPCachedAgent)
-
-    effective_url = mcp_url or SkillFlowMCPCachedAgent.DEFAULT_MCP_URL
-    agent.logger = MagicMock()
-    agent.logs_dir = logs_dir or Path("/tmp/test-logs")
-    agent.model_name = "openai/gpt-5-mini"
-    agent._OUTPUT_FILENAME = "output.json"
-    agent.reasoning_effort = None
-    agent._mcp_servers = [McpServer(name="skillflow", url=effective_url)]
-    agent._server_base_url = _derive_base_url(effective_url)
-    agent._cache = cache or {}
     return agent

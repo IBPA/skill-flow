@@ -1,0 +1,253 @@
+{
+  "name": "structure-aware",
+  "tasks_dir": "integration/skillsbench/tasks",
+  "output_dir": "outputs/experiments/structure-aware/",
+  "corpus_path": "data/skills/",
+  "cache_dir": "outputs/experiments/",
+  "retrievers": [
+    {
+      "enabled": true,
+      "retriever_type": "dense",
+      "model_name": "BAAI/bge-base-en-v1.5",
+      "query_prompt": "Represent this sentence for searching relevant passages: ",
+      "index_dir": "outputs/indices/bge-base/",
+      "top_k": 1000,
+      "label": "desc-bge-base"
+    },
+    {
+      "enabled": true,
+      "retriever_type": "dense",
+      "model_name": "BAAI/bge-code-v1",
+      "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
+      "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
+      "index_dir": "outputs/indices/bge-code-v1/",
+      "top_k": 1000,
+      "label": "c2-desc-bge-code"
+    },
+    {
+      "enabled": true,
+      "retriever_type": "dense",
+      "model_name": "BAAI/bge-code-v1",
+      "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
+      "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
+      "index_dir": "outputs/indices/bge-code-v1-content/",
+      "max_content_tokens": 2048,
+      "max_seq_length": 2048,
+      "batch_size": 8,
+      "top_k": 1000,
+      "label": "c1-content-bge-code"
+    },
+    {
+      "enabled": true,
+      "retriever_type": "section",
+      "top_k": 1000,
+      "section_aggregation": "rrf",
+      "section_pool_size": 1000,
+      "label": "strategy-a-3way-bge-base-rrf",
+      "sections": {
+        "yaml": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/yaml/"
+        },
+        "prose": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/prose/"
+        },
+        "code": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/code/"
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "retriever_type": "section",
+      "top_k": 1000,
+      "section_aggregation": "max",
+      "section_pool_size": 1000,
+      "label": "strategy-a-3way-bge-base-max",
+      "sections": {
+        "yaml": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/yaml/"
+        },
+        "prose": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/prose/"
+        },
+        "code": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/code/"
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "retriever_type": "section",
+      "top_k": 1000,
+      "section_aggregation": "mean",
+      "section_pool_size": 1000,
+      "label": "strategy-a-3way-bge-base-mean",
+      "sections": {
+        "yaml": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/yaml/"
+        },
+        "prose": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/prose/"
+        },
+        "code": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/code/"
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "retriever_type": "section",
+      "top_k": 1000,
+      "section_aggregation": "sum_norm",
+      "section_pool_size": 1000,
+      "label": "strategy-a-3way-bge-base-sumnorm",
+      "sections": {
+        "yaml": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/yaml/"
+        },
+        "prose": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/prose/"
+        },
+        "code": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/code/"
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "retriever_type": "section",
+      "top_k": 1000,
+      "section_aggregation": "rrf",
+      "section_pool_size": 1000,
+      "label": "strategy-b-3way-mixed-rrf",
+      "sections": {
+        "yaml": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/yaml/"
+        },
+        "prose": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/prose/"
+        },
+        "code": {
+          "model_name": "BAAI/bge-code-v1",
+          "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
+          "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
+          "batch_size": 8,
+          "max_seq_length": 2048,
+          "index_dir": "outputs/indices/section-mixed/code/"
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "retriever_type": "section",
+      "top_k": 1000,
+      "section_aggregation": "max",
+      "section_pool_size": 1000,
+      "label": "strategy-b-3way-mixed-max",
+      "sections": {
+        "yaml": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/yaml/"
+        },
+        "prose": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/prose/"
+        },
+        "code": {
+          "model_name": "BAAI/bge-code-v1",
+          "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
+          "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
+          "batch_size": 8,
+          "max_seq_length": 2048,
+          "index_dir": "outputs/indices/section-mixed/code/"
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "retriever_type": "section",
+      "top_k": 1000,
+      "section_aggregation": "mean",
+      "section_pool_size": 1000,
+      "label": "strategy-b-3way-mixed-mean",
+      "sections": {
+        "yaml": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/yaml/"
+        },
+        "prose": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/prose/"
+        },
+        "code": {
+          "model_name": "BAAI/bge-code-v1",
+          "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
+          "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
+          "batch_size": 8,
+          "max_seq_length": 2048,
+          "index_dir": "outputs/indices/section-mixed/code/"
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "retriever_type": "section",
+      "top_k": 1000,
+      "section_aggregation": "sum_norm",
+      "section_pool_size": 1000,
+      "label": "strategy-b-3way-mixed-sumnorm",
+      "sections": {
+        "yaml": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/yaml/"
+        },
+        "prose": {
+          "model_name": "BAAI/bge-base-en-v1.5",
+          "query_prompt": "Represent this sentence for searching relevant passages: ",
+          "index_dir": "outputs/indices/section-bge-base/prose/"
+        },
+        "code": {
+          "model_name": "BAAI/bge-code-v1",
+          "revision": "bd67852057c5d7ddcc7b8234d9d6c410117ed851",
+          "query_prompt": "<instruct>Given a task description, retrieve relevant skills that can help accomplish the task.\n<query>",
+          "batch_size": 8,
+          "max_seq_length": 2048,
+          "index_dir": "outputs/indices/section-mixed/code/"
+        }
+      }
+    }
+  ]
+}

@@ -14,6 +14,8 @@ import urllib.request
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from mcp_servers.utils.skill_loader import find_matching_task_id
+
 from benchmark.agents.skillflow_mcp_agent import SkillFlowMCPAgent
 from benchmark.agents.skills.manager import extract_task_name_from_trial_dir
 
@@ -66,7 +68,8 @@ class SkillFlowMCPCachedAgent(SkillFlowMCPAgent):
             logger.warning("Could not extract task name from %s", trial_dir)
             return
 
-        skill_keys = self._cache.get(task_name, [])
+        matched_task_id = find_matching_task_id(list(self._cache), task_name)
+        skill_keys = self._cache.get(matched_task_id, []) if matched_task_id else []
         self._notify_server(task_name, skill_keys)
 
     def _notify_server(self, task_id: str, skill_keys: list[str]) -> None:

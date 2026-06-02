@@ -16,6 +16,7 @@ def print_config(config: EvalConfig, job_name: str) -> None:
     print(f"Job name: {job_name}")
     print(f"Job path: {config.jobs_dir}")
     print(f"Benchmark: {config.benchmark_source}")
+    print(f"Agent: {config.agent.value}")
     print(f"Model: {config.model}")
     print(f"Reasoning effort: {config.reasoning_effort or '(none)'}")
     env_name = "Daytona" if config.environment.use_daytona else "Docker"
@@ -35,6 +36,7 @@ def print_multi_config(config: EvalConfig) -> None:
     Args:
         config: Evaluation configuration
     """
+    print(f"Agent: {config.agent.value}")
     print(f"Model: {config.model}")
     print(f"Reasoning effort: {config.reasoning_effort or '(none)'}")
     print(f"Concurrency: {config.environment.n_concurrent}")
@@ -62,6 +64,8 @@ def print_mode_config(config: EvalConfig) -> None:
         path = config.eval_results or config.selector_cache
         print(f"Mode: SKILLFLOW_INJECTION (skill injection from {source})")
         print(f"Source: {path}")
+        if config.eval_results_top_k:
+            print(f"Eval results top-k: {config.eval_results_top_k}")
         print(f"Tasks dir for skills: {config.tasks_dir_for_skills}")
     elif config.mode == EvalMode.SKILLFLOW_CACHED:
         print("Mode: SKILLFLOW_CACHED (pre-computed skills via MCP)")
