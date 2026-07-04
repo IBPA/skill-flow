@@ -10,6 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. **No cheating on test coverage**: Do not lower `--cov-fail-under` threshold or add files to `[tool.coverage.run] omit` to bypass failing coverage. Write proper tests instead.
 5. **Use fixtures in tests**: When config classes have required fields, use fixtures or helper functions (e.g., `make_config()`) to construct test objects.
 6. **Pydantic for all models**: Use Pydantic `BaseModel` consistently — not dataclasses.
+7. **Commit/push only via commands**: Never `git commit` or `git push` unless the user has just invoked `/commit-push`, `/lazy-commit-push`, or `/create-pr` — and when they do, perform it immediately. At all other times make only working-tree changes; never commit or push on your own.
 
 ## Project Overview
 
