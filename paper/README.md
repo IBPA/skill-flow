@@ -12,7 +12,7 @@ paper/
   figures/         Generated figures (source of truth)
   references.bib   Single shared bibliography
   arxiv/           The public manuscript
-    main.tex       \input{../tables/..}, \includegraphics{../figures/..},
+    manuscript.tex \input{../tables/..}, \includegraphics{../figures/..},
                    \bibliography{../references}
   scripts/         Tooling (Overleaf sync, etc.)
 ```
@@ -32,7 +32,7 @@ The generators write directly into `paper/tables/` and `paper/figures/`.
 ## Building the manuscript
 
 ```bash
-cd paper/arxiv && latexmk -pdf main.tex
+cd paper/arxiv && latexmk -pdf manuscript.tex
 ```
 
 Any manuscript variant lives in its own folder and pulls the shared assets via
@@ -43,4 +43,4 @@ a local override simply by shadowing a file in its own directory.
 
 `scripts/push-overleaf.sh` performs a one-way push of the `arxiv/` manuscript plus
 the shared assets to Overleaf. The Overleaf project's main document is
-`arxiv/main.tex`.
+`arxiv/manuscript.tex`.

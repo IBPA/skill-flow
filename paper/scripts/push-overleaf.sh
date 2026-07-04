@@ -4,7 +4,7 @@
 #
 # Pushes the public paper hub: the arxiv/ manuscript plus the shared assets
 # (tables/, figures/, references.bib). The Overleaf project's main document is
-# arxiv/main.tex (set once in the Overleaf UI); its ../tables and ../references
+# arxiv/manuscript.tex (set once in the Overleaf UI); its ../tables and ../references
 # paths resolve against the assets copied to the Overleaf root.
 #
 # Clones Overleaf, replaces contents with paper/, and pushes.
@@ -45,8 +45,8 @@ fi
 # local-only working areas, secrets) never leaves the machine.
 PUSH_ITEMS=(arxiv tables figures references.bib)
 
-if [ ! -f arxiv/main.tex ]; then
-    echo "Error: arxiv/main.tex not found. Nothing to push."
+if [ ! -f arxiv/manuscript.tex ]; then
+    echo "Error: arxiv/manuscript.tex not found. Nothing to push."
     exit 1
 fi
 
@@ -66,7 +66,7 @@ git clone "$OVERLEAF_URL" "$WORK_DIR"
 # Wipe everything except .git
 find "$WORK_DIR" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
 
-# Copy only the allow-listed items to the Overleaf root. arxiv/main.tex resolves
+# Copy only the allow-listed items to the Overleaf root. arxiv/manuscript.tex resolves
 # its ../tables, ../figures, and ../references paths against these copies.
 for item in "${PUSH_ITEMS[@]}"; do
     [ -e "$item" ] || continue
