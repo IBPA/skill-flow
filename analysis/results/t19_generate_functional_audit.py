@@ -54,7 +54,7 @@ def render_latex(dist: CorpusDistribution, summary: AuditSummary) -> list[str]:
         return f"{x * 100:.{d}f}\\%"  # escape % for LaTeX
 
     body = [
-        f"  Code-bearing (corpus, n={dist.n}) & {pct(dist.code_bearing)} \\\\",
+        f"  Code-bearing (corpus, n={dist.n:,}) & {pct(dist.code_bearing)} \\\\",
         f"  Bundles executable scripts & {pct(dist.has_scripts)} \\\\",
         f"  Has fenced code block & {pct(dist.has_code_block)} \\\\",
         f"  Has any bundled file & {pct(dist.has_bundled_file)} \\\\",
@@ -63,7 +63,7 @@ def render_latex(dist: CorpusDistribution, summary: AuditSummary) -> list[str]:
     if summary.n_judged:
         lo, hi = summary.functional_ci
         body += [
-            f"  Judged functional (sample, n={summary.n_judged}) & "
+            f"  Judged functional (sample, n={summary.n_judged:,}) & "
             f"{pct(summary.functional_fraction)} "
             f"{{\\scriptsize~[{pct(lo, 0)}, {pct(hi, 0)}]}} \\\\",
             f"  \\quad tier: functional & {summary.tier_functional} \\\\",

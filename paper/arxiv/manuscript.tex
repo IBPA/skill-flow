@@ -51,7 +51,7 @@ SkillFlow demonstrates that framing skill acquisition as an information retrieva
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\columnwidth]{figures/1_overview.png}
+  \includegraphics[width=\columnwidth]{../figures/1_overview.png}
   \caption{Overview of the SkillFlow pipeline.
   A user task is passed to an agent, which invokes SkillFlow to retrieve relevant skills from a library of 36K community-contributed skill definitions.
   The pipeline progressively narrows the candidate set through four stages: a bi-encoder retriever (1K skill candidates), a shallow cross-encoder reranker (100), a deep cross-encoder reranker (10), and an LLM-based selector ($\leq$5 skills).
@@ -226,7 +226,7 @@ Both benchmarks are evaluated under four conditions: (1) no skills, (2) Vercel s
   Oracle skills are the curated task-skill pairs provided by SkillsBench.
   $^{*}p_{\text{adj}}<0.05$ vs.\ no skills baseline.}
   \label{tab:results}
-  \input{tables/1_results}
+  \input{../tables/1_results}
 \end{table}
 
 \paragraph{Downstream gains depend on skill library coverage.}
@@ -253,7 +253,7 @@ These structural proxies indicate that what distinguishes effective skills is no
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\columnwidth]{figures/2_quality_proxies.png}
+  \includegraphics[width=\columnwidth]{../figures/2_quality_proxies.png}
   \caption{Structural proxy metrics: oracle ($n{=}229$) vs.\ community ($n{=}35{,}866$) skills.
   Subplots sorted by significance. $p$-values from two-sided Mann-Whitney $U$ tests, adjusted via Holm-Bonferroni.
   Hatched boxes/bars indicate non-significant differences ($p_{\text{adj}} \geq 0.05$).
@@ -278,7 +278,7 @@ On SkillsBench, oracle task--skill pairs serve as relevancy ground truth. Termin
   Terminal-Bench does not provide oracle skill assignments.
   $^{*}p_{\text{adj}}<0.05$; $^{**}p_{\text{adj}}<0.01$ on Tasks Used vs.\ Vercel baseline.}
   \label{tab:adoption}
-  \input{tables/2_adoption}
+  \input{../tables/2_adoption}
 \end{table}
 
 \paragraph{SkillFlow achieves higher retrieval and use rates.}
@@ -305,7 +305,7 @@ We use the 229 oracle skills from the 87 SkillsBench tasks as retrieval ground t
   Inapplicable cells (where $k$ exceeds the stage output size) are marked with dashes.
   K output denotes the number of candidates produced by each stage.}
   \label{tab:retrieval_stages}
-  \input{tables/3_retrieval_stages}
+  \input{../tables/3_retrieval_stages}
 \end{table}
 
 \paragraph{Each stage progressively improves ranking quality.}
@@ -327,7 +327,7 @@ To quantify the contribution of each pipeline stage, we evaluate retrieval perfo
   MRR, R@10, P@10, and Hit@10 (fraction of tasks with $\geq$1 oracle skill in top 10) reported.
   The first three rows compare retrieval methods. Subsequent rows add pipeline stages cumulatively.}
   \label{tab:stage_ablation}
-  \input{tables/4_stage_ablation}
+  \input{../tables/4_stage_ablation}
 \end{table}
 
 BM25 sparse retrieval performs poorly (MRR 0.266), confirming that lexical matching is insufficient for bridging the semantic gap between task descriptions and skill content.
@@ -355,7 +355,7 @@ These results motivate our pipeline design: $M{=}5$ for retrieval to maximize re
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\columnwidth]{figures/3_query_impact.png}
+  \includegraphics[width=\columnwidth]{../figures/3_query_impact.png}
   \caption{Multi-query impact across pipeline stages.
   (a)~Relative change in pass-through recall (R@$k_\text{output}$) from the $M{=}1$ baseline.
   (b)~MRR by stage, showing that $M{=}1$ yields the best top-heavy ranking at every stage.
@@ -391,7 +391,7 @@ This suggests that the multi-stage reranking pipeline surfaces higher-quality ca
   Stages 2--3 include cross-encoder scoring.
   Stage 4 calls GPT-4o-mini for binary relevance filtering.}
   \label{tab:latency}
-  \input{tables/5_latency}
+  \input{../tables/5_latency}
 \end{table}
 
 \paragraph{Retrieval gains are bounded by what the library contains.}
@@ -430,7 +430,7 @@ Additionally, the skill library was constructed at a fixed point in time, and th
 
 % ---------- References ----------
 \bibliographystyle{plainnat}
-\bibliography{main}
+\bibliography{../references}
 
 % ---------- Appendix ----------
 \appendix
@@ -460,7 +460,7 @@ Of the 43,660 skills processed, 7,703 were excluded due to the 50\,MB repository
   \centering
   \caption{Skill corpus collection statistics.}
   \label{tab:corpus_stats}
-  \input{tables/6_corpus_stats}
+  \input{../tables/6_corpus_stats}
 \end{table}
 
 \paragraph{Data Format.}
@@ -523,7 +523,7 @@ If all retries fail, it falls back to $M$ independent single-query calls with in
   \caption{Example query generation outputs for the \texttt{court-form-filling} task.
   The task instruction is shown at the top, followed by the generated queries for $M = 1$ (single-query prompt) and $M = 5$ (multi-query prompt).}
   \label{tab:query_examples}
-  \input{tables/7_query_examples}
+  \input{../tables/7_query_examples}
 \end{table}
 
 \subsection{Statistical Methodology}
@@ -586,7 +586,7 @@ Since the retriever is the first stage of the pipeline and its primary objective
   Bold indicates best per column.
   All metrics are averaged across tasks.}
   \label{tab:retriever_comparison}
-  \input{tables/8_retriever_comparison}
+  \input{../tables/8_retriever_comparison}
 \end{table}
 
 \begin{table}[t]
@@ -596,7 +596,7 @@ Since the retriever is the first stage of the pipeline and its primary objective
   Bold indicates best per column within each aggregation group.
   All metrics are averaged across tasks.}
   \label{tab:retriever_query_config}
-  \input{tables/9_retriever_query_config}
+  \input{../tables/9_retriever_query_config}
 \end{table}
 
 \subsection{Reranker Details}
@@ -631,7 +631,7 @@ We therefore select ms-marco-MiniLM-L-6-v2 with $M = 1$ for the shallow reranker
   Bold indicates best per column. Underline indicates the selected configuration for the shallow reranker.
   All metrics are averaged across tasks.}
   \label{tab:reranker_comparison}
-  \input{tables/10_reranker_comparison}
+  \input{../tables/10_reranker_comparison}
 \end{table}
 
 \paragraph{Deep Reranker Configuration.}
@@ -641,7 +641,7 @@ We evaluate chunk sizes of 1024, 2048, 4096, and 8192 tokens, along with query c
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\columnwidth]{figures/4_skill_dist.png}
+  \includegraphics[width=\columnwidth]{../figures/4_skill_dist.png}
   \caption{Distribution of skill content length (in tokens, cl100k\_base encoding) across the 35,866 skills in the library.
   The red line shows cumulative coverage: 4096 tokens captures 92.9\% of all skills in full.}
   \label{fig:skill_content_dist}
@@ -664,7 +664,7 @@ Based on these results, we select BGE-reranker-v2-m3 with 4096-token truncation 
   Bold indicates best per column.
   All metrics are averaged across tasks.}
   \label{tab:deep_reranker_config}
-  \input{tables/11_deep_reranker_config}
+  \input{../tables/11_deep_reranker_config}
 \end{table}
 
 \subsection{Selector Details}
@@ -811,7 +811,7 @@ Exclusion decisions were made during pilot runs based on three criteria: (1)~\te
   Of 87 SkillsBench tasks, 22 are excluded (65 retained).
   Of 89 Terminal-Bench tasks, 1 is excluded (88 retained).}
   \label{tab:excluded_tasks}
-  \input{tables/12_excluded_tasks}
+  \input{../tables/12_excluded_tasks}
 \end{table}
 
 \subsection{Qualitative Case Studies}
@@ -828,7 +828,7 @@ Outcome: 2/2 tests passed.
   \centering
   \caption{Pipeline progression for \texttt{invoice-fraud-detection}.}
   \label{tab:case_study_1}
-  \input{tables/13_case_study_1}
+  \input{../tables/13_case_study_1}
 \end{table}
 
 \paragraph{Agent behavior.}
@@ -847,7 +847,7 @@ This case illustrates how reranking transforms an uninformative Stage~1 ranking 
   \centering
   \caption{Pipeline progression for \texttt{court-form-filling}.}
   \label{tab:case_study_2}
-  \input{tables/14_case_study_2}
+  \input{../tables/14_case_study_2}
 \end{table}
 
 \paragraph{Agent behavior.}
@@ -868,7 +868,7 @@ Outcome: 6/9 tests passed.
   \centering
   \caption{Pipeline progression for \texttt{gravitational-wave-detection}.}
   \label{tab:case_study_3}
-  \input{tables/15_case_study_3}
+  \input{../tables/15_case_study_3}
 \end{table}
 
 \paragraph{Agent behavior.}

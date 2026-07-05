@@ -55,9 +55,9 @@ Each top-level directory is a venue submission, e.g.:
 
 \`\`\`
 .
-├── ACM_CAIS/
-├── COLM/
-└── NeurIPS/
+├── Confefrence-1/
+├── Workshop-1/
+└── Workshop-2/
 \`\`\`
 
 This repo is cloned into the parent project's \`paper/submissions/\`, which is

@@ -41,7 +41,16 @@ _TB_ORDER: list[tuple[str, str]] = [
     ),
 ]
 
+# Second-agent SkillsBench panel (no Vercel/oracle-free benchmark). Used only when
+# a second-agent model is supplied, to fold a transferability panel into tab:results.
+_SK_SECOND_AGENT_ORDER: list[tuple[str, str]] = [
+    ("skillsbench-inject", "Oracle"),
+    ("baseline", "No Skills"),
+    ("skillflow-inject", "SkillFlow (Ours)"),
+]
+
 _LABEL_PAD = 16
+_MODEL_PAD = 16
 
 
 def _stars_from_adj_p(p_adj: float) -> str:
@@ -116,88 +125,77 @@ def _compute_significance(
     return sig_map, pvalue_records
 
 
-def _build_section(
+def _score_group(
     eval_dir: Path,
     cond_order: list[tuple[str, str]],
-    bench_name: str,
+    stat_label: str,
     prefix: str,
-    model: str | None = None,
-) -> tuple[list[str] | None, list[dict[str, object]]]:
-    """Build lines for one benchmark section.
+    model: str | None,
+) -> tuple[list[dict[str, str]], str | None, list[dict[str, object]]]:
+    """Load one (benchmark, model) group; return bolded rows + p-value records.
 
-    Returns:
-        Tuple of (LaTeX lines or None, list of p-value records).
+    Bolding (best per column, excluding Oracle) and significance (Holm-Bonferroni
+    vs the group's own No Skills baseline) are computed within the group, so the
+    two models never compete for bold or share a correction family.
     """
-    # Load conditions in order
     loaded: list[tuple[str, ConditionResults]] = []
     for cond_name, label in cond_order:
         c = load_condition(eval_dir, cond_name, label, prefix=prefix, model=model)
         if c.runs:
             loaded.append((label, c))
     if not loaded:
-        return None, []
+        return [], None, []
 
-    conds_list = [c for _, c in loaded]
-    aligned = align_conditions(conds_list)
-    aligned_dict = {c.label: c for c in aligned}
-
-    baseline_label = "No Skills"
-    baseline_cond = aligned_dict.get(baseline_label)
+    aligned_dict = {c.label: c for c in align_conditions([c for _, c in loaded])}
+    baseline_cond = aligned_dict.get("No Skills")
     oracle_label = "Oracle" if "Oracle" in aligned_dict else None
 
     sig_map, pvalue_records = _compute_significance(
-        loaded,
-        aligned_dict,
-        baseline_label,
-        baseline_cond,
-        bench_name,
+        loaded, aligned_dict, "No Skills", baseline_cond, stat_label
     )
 
     row_data: list[dict[str, str]] = []
     for label, _cond in loaded:
         cond = aligned_dict[label]
-        ci_p1 = benchmark_ci(cond, "pass_at", k=1)
-        ci_p3 = benchmark_ci(cond, "pass_at", k=3)
-        ci_pp3 = benchmark_ci(cond, "pass_pow", k=3)
-        ci_steps = benchmark_ci(cond, "mean_steps")
-        ci_cost = benchmark_ci(cond, "mean_cost")
-
-        sig = _stars_from_adj_p(sig_map[label]) if label in sig_map else ""
-
         row_data.append(
             {
                 "label": label,
-                "p1": fmt_ci_pct(ci_p1),
-                "p3": fmt_ci_pct(ci_p3),
-                "pp3": fmt_ci_pct(ci_pp3),
-                "steps": _fmt_plain_steps(ci_steps),
-                "cost": _fmt_plain_cost(ci_cost),
-                "sig": sig,
+                "p1": fmt_ci_pct(benchmark_ci(cond, "pass_at", k=1)),
+                "p3": fmt_ci_pct(benchmark_ci(cond, "pass_at", k=3)),
+                "pp3": fmt_ci_pct(benchmark_ci(cond, "pass_pow", k=3)),
+                "steps": _fmt_plain_steps(benchmark_ci(cond, "mean_steps")),
+                "cost": _fmt_plain_cost(benchmark_ci(cond, "mean_cost")),
+                "sig": _stars_from_adj_p(sig_map[label]) if label in sig_map else "",
             }
         )
 
     oracle_idx = next(
-        (i for i, r in enumerate(row_data) if r["label"] == oracle_label),
-        None,
+        (i for i, r in enumerate(row_data) if r["label"] == oracle_label), None
     )
     exclude = {oracle_idx} if oracle_idx is not None else set()
     for col in ("p1", "p3", "pp3"):
-        cells = [r[col] for r in row_data]
-        bolded = mark_best(cells, exclude=exclude, direction="max")
+        bolded = mark_best([r[col] for r in row_data], exclude=exclude, direction="max")
         for i, r in enumerate(row_data):
             r[col] = bolded[i]
     for col in ("steps", "cost"):
-        cells = [r[col] for r in row_data]
-        bolded = mark_best_whole(cells, exclude=exclude, direction="min")
+        bolded = mark_best_whole(
+            [r[col] for r in row_data], exclude=exclude, direction="min"
+        )
         for i, r in enumerate(row_data):
             r[col] = bolded[i]
 
-    lines: list[str] = [
-        f"  \\multicolumn{{6}}{{l}}{{\\textit{{{bench_name}}}}} \\\\",
-        r"  \midrule",
-    ]
+    return row_data, oracle_label, pvalue_records
 
-    for row in row_data:
+
+def _render_group_rows(
+    row_data: list[dict[str, str]],
+    oracle_label: str | None,
+    model_label: str,
+) -> list[str]:
+    """Render a model group's rows; the model label appears on the first row."""
+    lines: list[str] = []
+    for idx, row in enumerate(row_data):
+        model_cell = model_label if idx == 0 else ""
         lbl, sig = row["label"], row["sig"]
         p1, p3, pp3 = row["p1"], row["p3"], row["pp3"]
         steps, cost = row["steps"], row["cost"]
@@ -210,10 +208,44 @@ def _build_section(
         else:
             p1, end = _insert_sig(p1, sig), " \\\\"
         lines.append(
-            f"  {lbl:<{_LABEL_PAD}s} & {p1} & {p3} & {pp3} & {steps} & {cost}{end}",
+            f"  {model_cell:<{_MODEL_PAD}s} & {lbl:<{_LABEL_PAD}s} "
+            f"& {p1} & {p3} & {pp3} & {steps} & {cost}{end}"
         )
+    return lines
 
-    return lines, pvalue_records
+
+def _build_section(
+    eval_dir: Path,
+    bench_name: str,
+    groups: list[tuple[str, str | None, list[tuple[str, str]], str]],
+) -> tuple[list[str] | None, list[dict[str, object]]]:
+    """Build a benchmark section spanning one or more model groups.
+
+    ``groups`` is a list of ``(model_label, model, cond_order, prefix)``. Each
+    model's rows are stacked under a single section header, with the model shown
+    once in the first column.
+    """
+    rendered: list[str] = []
+    pvalues: list[dict[str, object]] = []
+    for model_label, model, cond_order, prefix in groups:
+        stat_label = f"{bench_name} ({model_label})"
+        row_data, oracle_label, pv = _score_group(
+            eval_dir, cond_order, stat_label, prefix, model
+        )
+        pvalues.extend(pv)
+        if row_data:
+            if rendered:  # light divider between model groups in the same section
+                rendered.append(r"  \cmidrule(lr){1-7}")
+            rendered.extend(_render_group_rows(row_data, oracle_label, model_label))
+    if not rendered:
+        return None, pvalues
+
+    lines = [
+        f"  \\multicolumn{{7}}{{l}}{{\\textit{{{bench_name}}}}} \\\\",
+        r"  \midrule",
+        *rendered,
+    ]
+    return lines, pvalues
 
 
 def _insert_sig(cell: str, sig: str) -> str:
@@ -229,28 +261,42 @@ def _insert_sig(cell: str, sig: str) -> str:
 def render_table(
     eval_dir: Path,
     model: str | None = None,
+    model_label: str = "GPT-5-mini",
+    second_agent_model: str | None = None,
+    second_agent_name: str = "Claude Haiku 4.5",
 ) -> tuple[list[str], list[dict[str, object]]]:
-    """Return LaTeX tabular content and collected p-value records."""
+    """Return LaTeX tabular content and collected p-value records.
+
+    When ``second_agent_model`` is set, its SkillsBench runs are added as a
+    second model group inside the SkillsBench section (a ``Model`` column
+    distinguishes the agents) to demonstrate transferability across backbones.
+    """
     lines: list[str] = [
         r"\resizebox{\columnwidth}{!}{%",
-        r"\begin{tabular}{rccccc}",
+        r"\begin{tabular}{llccccc}",
         r"  \toprule",
         (
-            r"  \textbf{Condition} & \textbf{Pass@1} & \textbf{Pass@3}"
-            r" & \textbf{Pass\textasciicircum3} & \textbf{Steps/Task}"
-            r" & \textbf{Cost/Task} \\"
+            r"  \textbf{Model} & \textbf{Condition} & \textbf{Pass@1}"
+            r" & \textbf{Pass@3} & \textbf{Pass\textasciicircum3}"
+            r" & \textbf{Steps/Task} & \textbf{Cost/Task} \\"
         ),
         r"  \midrule",
     ]
 
-    all_pvalues: list[dict[str, object]] = []
-    for prefix, cond_order, bench_name in [
-        ("sk", _SK_ORDER, "SkillsBench"),
-        ("tb", _TB_ORDER, "Terminal-Bench"),
-    ]:
-        section, pv_records = _build_section(
-            eval_dir, cond_order, bench_name, prefix, model
+    sk_groups: list[tuple[str, str | None, list[tuple[str, str]], str]] = [
+        (model_label, model, _SK_ORDER, "sk"),
+    ]
+    if second_agent_model:
+        sk_groups.append(
+            (second_agent_name, second_agent_model, _SK_SECOND_AGENT_ORDER, "sk")
         )
+
+    all_pvalues: list[dict[str, object]] = []
+    for bench_name, groups in [
+        ("SkillsBench", sk_groups),
+        ("Terminal-Bench", [(model_label, model, _TB_ORDER, "tb")]),
+    ]:
+        section, pv_records = _build_section(eval_dir, bench_name, groups)
         all_pvalues.extend(pv_records)
         if section:
             lines.extend(section)
@@ -299,14 +345,36 @@ def main() -> int:
         type=str,
         default="gpt5mini",
         help=(
-            "Model substring to filter run directories. Table 1 reports the "
-            "Codex GPT-5-mini runs; pass an empty string to disable filtering."
+            "Model substring for the primary run set (Codex GPT-5-mini); pass an "
+            "empty string to disable filtering."
         ),
+    )
+    parser.add_argument(
+        "--model-label",
+        type=str,
+        default="GPT-5-mini",
+        help="Display name for the primary model in the Model column.",
     )
     parser.add_argument(
         "--output",
         type=Path,
         default=Path("paper/tables/1_results.tex"),
+    )
+    parser.add_argument(
+        "--second-agent-model",
+        type=str,
+        default="claudehaiku4520251001",
+        help=(
+            "Model substring for a second SkillsBench model group added under the "
+            "SkillsBench section. Pass an empty string to omit it; it is also "
+            "omitted automatically if no matching runs are found."
+        ),
+    )
+    parser.add_argument(
+        "--second-agent-name",
+        type=str,
+        default="Claude Haiku 4.5",
+        help="Display name for the second agent in the Model column.",
     )
     parser.add_argument(
         "--print-pvalues",
@@ -316,7 +384,13 @@ def main() -> int:
     args = parser.parse_args()
 
     model = args.model or None
-    table_lines, pvalue_records = render_table(args.eval_dir, model)
+    table_lines, pvalue_records = render_table(
+        args.eval_dir,
+        model,
+        model_label=args.model_label,
+        second_agent_model=args.second_agent_model,
+        second_agent_name=args.second_agent_name,
+    )
     if args.print_pvalues:
         _print_pvalues(pvalue_records)
         print()
