@@ -6,6 +6,7 @@ import re
 import statistics
 from math import comb
 from pathlib import Path
+from typing import NamedTuple
 
 from pydantic import BaseModel
 
@@ -14,10 +15,35 @@ logger = logging.getLogger(__name__)
 # Tasks excluded from calculations (e.g. persistent infra errors).
 EXCLUDED_TASKS: set[str] = {"train-fasttext"}
 
-# gpt-5-mini pricing (USD per token).
-_INPUT_PRICE = 0.250 / 1_000_000
-_CACHED_PRICE = 0.025 / 1_000_000
-_OUTPUT_PRICE = 2.000 / 1_000_000
+
+class _Pricing(NamedTuple):
+    """Per-token USD prices (input, cached-read, output)."""
+
+    input: float
+    cached: float
+    output: float
+
+
+# List prices per model (USD per token). Cached-read is 0.1x input for both.
+_GPT5MINI_PRICING = _Pricing(0.250 / 1_000_000, 0.025 / 1_000_000, 2.000 / 1_000_000)
+# Claude Haiku 4.5: $1 / $5 per MTok (input / output), cache read $0.10 / MTok.
+_HAIKU_PRICING = _Pricing(1.000 / 1_000_000, 0.100 / 1_000_000, 5.000 / 1_000_000)
+
+# Ordered model-substring -> pricing; first containment match wins.
+_PRICING_BY_MODEL: list[tuple[str, _Pricing]] = [
+    ("claudehaiku", _HAIKU_PRICING),
+    ("gpt5mini", _GPT5MINI_PRICING),
+]
+_DEFAULT_PRICING = _GPT5MINI_PRICING
+
+
+def _pricing_for(model: str | None) -> _Pricing:
+    """Select list pricing from a model substring, defaulting to gpt-5-mini."""
+    if model:
+        for key, pricing in _PRICING_BY_MODEL:
+            if key in model:
+                return pricing
+    return _DEFAULT_PRICING
 
 
 # ------------------------------------------------------------------
@@ -162,13 +188,18 @@ def _tok(fm: dict[str, object], key: str) -> int:
     return int(v) if isinstance(v, (int, float)) else 0
 
 
-def _compute_cost(final_metrics: dict[str, object]) -> float:
-    """Compute USD cost from trajectory token counts."""
+def _compute_cost(
+    final_metrics: dict[str, object],
+    pricing: _Pricing = _DEFAULT_PRICING,
+) -> float:
+    """Compute USD cost from trajectory token counts under ``pricing``."""
     prompt = _tok(final_metrics, "total_prompt_tokens")
     cached = _tok(final_metrics, "total_cached_tokens")
     completion = _tok(final_metrics, "total_completion_tokens")
     uncached = prompt - cached
-    return uncached * _INPUT_PRICE + cached * _CACHED_PRICE + completion * _OUTPUT_PRICE
+    return (
+        uncached * pricing.input + cached * pricing.cached + completion * pricing.output
+    )
 
 
 def _parse_run(result_path: Path) -> dict[str, tuple[float, bool]]:
@@ -195,7 +226,10 @@ def _parse_run(result_path: Path) -> dict[str, tuple[float, bool]]:
     return tasks
 
 
-def _parse_trajectories(run_dir: Path) -> dict[str, tuple[int, float]]:
+def _parse_trajectories(
+    run_dir: Path,
+    pricing: _Pricing = _DEFAULT_PRICING,
+) -> dict[str, tuple[int, float]]:
     """Parse trajectory data from run directory → {task: (steps, cost_usd)}."""
     tasks: dict[str, tuple[int, float]] = {}
     for task_dir in run_dir.iterdir():
@@ -210,7 +244,7 @@ def _parse_trajectories(run_dir: Path) -> dict[str, tuple[int, float]]:
         data = json.loads(traj.read_text(encoding="utf-8"))
         fm = data.get("final_metrics") or {}
         steps = int(fm.get("total_steps") or 0)
-        cost = _compute_cost(fm)
+        cost = _compute_cost(fm, pricing)
         tasks[task_name] = (steps, cost)
     return tasks
 
@@ -300,13 +334,14 @@ def load_condition(
     if not runs:
         logger.warning("No runs found for condition '%s' in %s", condition, eval_dir)
 
+    pricing = _pricing_for(model)
     all_task_names: set[str] = set()
     run_data: list[dict[str, tuple[float, bool]]] = []
     traj_data: list[dict[str, tuple[int, float]]] = []
     for run_dir in runs:
         parsed = _parse_run(run_dir / "result.json")
         run_data.append(parsed)
-        traj_data.append(_parse_trajectories(run_dir))
+        traj_data.append(_parse_trajectories(run_dir, pricing))
         all_task_names.update(parsed.keys())
 
     task_rewards: dict[str, TaskReward] = {}
