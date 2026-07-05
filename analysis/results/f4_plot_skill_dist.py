@@ -1,12 +1,15 @@
 """Plot the distribution of skills across content-length buckets.
 
-Produces a bar chart showing how many skills fall into each token-length
-bucket: <512, 512-1024, 1024-2048, 2048-4096, 4096-8192, >=8192.
+Produces a bar chart showing how many skills fall into each character-length
+bucket: <512, 512-1024, 1024-2048, 2048-4096, 4096-8192, >=8192. Lengths are
+measured in characters because the reranker truncates skill content by
+characters (``max_content_chars``), so the coverage curve must be expressed in
+the same unit as the truncation windows.
 
 Usage::
 
     uv run python -m analysis.results.f4_plot_skill_dist \
-        [--corpus-path PATH] [--output PATH]
+        [--corpus-path PATH | --contents-json PATH] [--output PATH]
 """
 
 from __future__ import annotations
@@ -35,26 +38,20 @@ _BUCKET_LABELS = [
 ]
 
 
-def _token_count(text: str) -> int:
-    """Count tokens using tiktoken cl100k_base, with char//4 fallback."""
-    try:
-        import tiktoken  # noqa: PLC0415
-
-        enc = tiktoken.get_encoding("cl100k_base")
-        return len(enc.encode(text))
-    except Exception:
-        return len(text) // 4
+def _char_count(text: str) -> int:
+    """Return the character length of a skill's content."""
+    return len(text)
 
 
-def _bucket_index(token_count: int) -> int:
-    """Return the bucket index for a given token count."""
+def _bucket_index(char_count: int) -> int:
+    """Return the bucket index for a given character count."""
     for i in range(len(_BUCKET_EDGES) - 1):
-        if token_count < _BUCKET_EDGES[i + 1]:
+        if char_count < _BUCKET_EDGES[i + 1]:
             return i
     return len(_BUCKET_EDGES) - 1
 
 
-def _collect_token_counts(corpus_path: Path) -> list[int]:
+def _collect_char_counts(corpus_path: Path) -> list[int]:
     index_file = corpus_path / "_metadata" / "index.json"
     data = json.loads(index_file.read_text(encoding="utf-8"))
     skills_dict: dict[str, dict[str, object]] = data["skills"]
@@ -65,11 +62,22 @@ def _collect_token_counts(corpus_path: Path) -> list[int]:
         try:
             content = skill_file.read_text(encoding="utf-8", errors="replace")
         except FileNotFoundError:
-            logger.warning("Missing SKILL.md for %s — counted as 0 tokens", key)
+            logger.warning("Missing SKILL.md for %s — counted as 0 chars", key)
             counts.append(0)
             continue
-        counts.append(_token_count(content))
+        counts.append(_char_count(content))
     return counts
+
+
+def _collect_char_counts_from_contents(contents_json: Path) -> list[int]:
+    """Char-count skills from a persisted ``skill_contents.json`` mapping.
+
+    Used when the raw corpus is unavailable; the JSON maps each skill key to its
+    full SKILL.md text (the same content the reranker scores).
+    """
+    data = json.loads(contents_json.read_text(encoding="utf-8"))
+    values = data.values() if isinstance(data, dict) else data
+    return [_char_count(v) for v in values if isinstance(v, str)]
 
 
 def _plot_distribution(counts: list[int], output_path: Path) -> None:
@@ -120,7 +128,7 @@ def _plot_distribution(counts: list[int], output_path: Path) -> None:
     ax2.set_ylim(0, 105)
 
     ax.set_title(f"Skill Content Length Distribution (n={len(counts):,})")
-    ax.set_xlabel("Token count (cl100k_base)")
+    ax.set_xlabel("Character count")
     ax.set_ylabel("Number of skills")
     ax2.legend(loc="center right")
     fig.tight_layout()
@@ -133,9 +141,16 @@ def _plot_distribution(counts: list[int], output_path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Plot skill content-length distribution by token buckets.",
+        description="Plot skill content-length distribution by character buckets.",
     )
     parser.add_argument("--corpus-path", type=Path, default=None)
+    parser.add_argument(
+        "--contents-json",
+        type=Path,
+        default=None,
+        help="Path to a skill_contents.json mapping (used when the raw corpus "
+        "is unavailable).",
+    )
     parser.add_argument(
         "--output",
         type=Path,
@@ -145,15 +160,16 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    corpus_path = args.corpus_path
-    if corpus_path is None:
-        cfg = load_config()
-        corpus_path = Path(cfg.index.input_corpus_path)
-    corpus_path = corpus_path.resolve()
-
-    counts = _collect_token_counts(corpus_path)
+    if args.contents_json is not None:
+        counts = _collect_char_counts_from_contents(args.contents_json.resolve())
+    else:
+        corpus_path = args.corpus_path
+        if corpus_path is None:
+            cfg = load_config()
+            corpus_path = Path(cfg.index.input_corpus_path)
+        counts = _collect_char_counts(corpus_path.resolve())
     if not counts:
-        print("No skills found — check corpus path.")
+        print("No skills found — check corpus / contents path.")
         return
 
     _plot_distribution(counts, args.output)
