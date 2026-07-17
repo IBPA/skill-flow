@@ -70,13 +70,21 @@ def load_community_skills(
     Prefers *corpus_dir* (gives both text + directory), falling back to
     *contents_path* (``skill_contents.json``, text only — bundle metrics
     will be zero).
+
+    Only a skill directory's own top-level ``SKILL.md`` counts, matching the
+    definition used to build the retrieval index (and the corpus audit). A
+    recursive search would also pick up ``SKILL.md`` files nested inside a
+    skill's bundle, counting one skill more than once and inflating the
+    population beyond what is actually indexed.
     """
     if corpus_dir and corpus_dir.is_dir():
         skills: dict[str, tuple[str, Path]] = {}
-        for skill_md in sorted(corpus_dir.rglob("SKILL.md")):
-            key = str(skill_md.parent.relative_to(corpus_dir))
+        for skill_dir in sorted(d for d in corpus_dir.iterdir() if d.is_dir()):
+            skill_md = skill_dir / "SKILL.md"
+            if not skill_md.is_file():
+                continue
             text = skill_md.read_text(encoding="utf-8", errors="replace")
-            skills[key] = (text, skill_md.parent)
+            skills[skill_dir.name] = (text, skill_dir)
         return skills
 
     if contents_path and contents_path.is_file():

@@ -133,7 +133,9 @@ class TestLoadCommunitySkills:
         assert "skill-a" in result
 
     def test_from_corpus_dir(self, tmp_path: Path) -> None:
-        skill_dir = tmp_path / "author" / "my-skill"
+        # The corpus is flat: each skill is a direct child of the corpus dir
+        # holding its own top-level SKILL.md (data/skills/skillsmp/<name>/).
+        skill_dir = tmp_path / "my-skill"
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text("# My Skill")
         result = load_community_skills(corpus_dir=tmp_path)
@@ -141,6 +143,33 @@ class TestLoadCommunitySkills:
         text, path = next(iter(result.values()))
         assert "# My Skill" in text
         assert path == skill_dir
+
+    def test_bundled_skill_md_not_counted_as_its_own_skill(
+        self, tmp_path: Path
+    ) -> None:
+        """A SKILL.md nested inside a skill's bundle is part of that skill.
+
+        Counting it separately would report more skills than are indexed.
+        """
+        skill_dir = tmp_path / "my-skill"
+        (skill_dir / "bundled" / "reference").mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text("# My Skill")
+        (skill_dir / "bundled" / "reference" / "SKILL.md").write_text("# Bundled")
+
+        result = load_community_skills(corpus_dir=tmp_path)
+
+        assert list(result) == ["my-skill"]
+
+    def test_dir_without_skill_md_is_skipped(self, tmp_path: Path) -> None:
+        """Downloaded dirs that ship no SKILL.md are never indexed."""
+        (tmp_path / "has-skill").mkdir()
+        (tmp_path / "has-skill" / "SKILL.md").write_text("# Kept")
+        (tmp_path / "no-skill").mkdir()
+        (tmp_path / "no-skill" / "README.md").write_text("# Dropped")
+
+        result = load_community_skills(corpus_dir=tmp_path)
+
+        assert list(result) == ["has-skill"]
 
     def test_no_sources(self) -> None:
         result = load_community_skills()
