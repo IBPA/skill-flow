@@ -21,7 +21,9 @@ from pathlib import Path
 
 from analysis.results.utils.latex_utils import write_or_print
 
-_DEFAULT_CRAWLER_DIR = Path(__file__).resolve().parents[2] / ".." / "skill-crawler"
+# Crawler metadata now lives in this repo (data/skills/_metadata) after the
+# migration away from the standalone skill-crawler checkout.
+_DEFAULT_CRAWLER_DIR = Path(__file__).resolve().parents[2]
 
 
 # ------------------------------------------------------------------
@@ -37,17 +39,32 @@ def _load_metadata(crawler_dir: Path) -> tuple[dict, dict]:
     return index, sync_state
 
 
-def _compute_counts(index: dict, sync_state: dict) -> dict[str, int]:
-    """Return total-processed, skipped, failed, indexed counts."""
+def _count_indexed(corpus_dir: Path) -> int:
+    """Return the number of downloaded skills that carry a top-level SKILL.md.
+
+    Downloading a skill's repository does not guarantee it contains a
+    ``SKILL.md``; only those that do are retained and embedded into the
+    retrieval index, so this is smaller than the downloaded count.
+    """
+    if not corpus_dir.is_dir():
+        return 0
+    return sum(
+        1 for d in corpus_dir.iterdir() if d.is_dir() and (d / "SKILL.md").is_file()
+    )
+
+
+def _compute_counts(index: dict, sync_state: dict, corpus_dir: Path) -> dict[str, int]:
+    """Return total-processed, skipped, failed, downloaded, indexed counts."""
     src = sync_state["sources"]["skillsmp"]
     skipped = len(src.get("skipped_skills", []))
     failed = len(src.get("failed_skills", []))
-    indexed = len(index["skills"])
+    downloaded = len(index["skills"])
     return {
-        "total_processed": indexed + skipped + failed,
+        "total_processed": downloaded + skipped + failed,
         "skipped": skipped,
         "failed": failed,
-        "indexed": indexed,
+        "downloaded": downloaded,
+        "indexed": _count_indexed(corpus_dir),
     }
 
 
@@ -62,7 +79,8 @@ def render_table(counts: dict[str, int]) -> list[str]:
         ("Skills processed", counts["total_processed"]),
         ("Excluded (repo $>$ 50\\,MB)", counts["skipped"]),
         ("Failed (deleted/inaccessible)", counts["failed"]),
-        ("Downloaded \\& indexed", counts["indexed"]),
+        ("Downloaded", counts["downloaded"]),
+        ("Indexed (valid SKILL.md)", counts["indexed"]),
     ]
 
     lines: list[str] = [
@@ -98,6 +116,11 @@ def main() -> int:
         default=_DEFAULT_CRAWLER_DIR,
     )
     parser.add_argument(
+        "--corpus-dir",
+        type=Path,
+        default=Path("data/skills/skillsmp"),
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=Path("paper/tables/6_corpus_stats.tex"),
@@ -105,7 +128,7 @@ def main() -> int:
     args = parser.parse_args()
 
     index, sync_state = _load_metadata(args.crawler_dir)
-    counts = _compute_counts(index, sync_state)
+    counts = _compute_counts(index, sync_state, args.corpus_dir)
     write_or_print(render_table(counts), args.output)
     return 0
 
