@@ -59,6 +59,15 @@ _PIPELINE_STAGES: dict[str, str] = {
         "outputs/experiments/deep-reranker-comparison/"
         "baai-bge-reranker-v2-m3-4096chars-q1-max.json"
     ),
+    r"$+$ Selector (1--4)": (
+        "outputs/pipeline/skillsbench/specificity-v2.0/eval-stage4-selector.json"
+    ),
+}
+
+# Stages whose output is smaller than 10 candidates; @10 metrics do not apply
+# and are rendered as dashes (matching tab:retrieval_stages).
+_MAX_K_BY_LABEL: dict[str, int] = {
+    r"$+$ Selector (1--4)": 5,
 }
 
 _LABEL_PAD = 32
@@ -71,12 +80,23 @@ _LABEL_PAD = 32
 
 def _compute_ablation_cells(
     report: EvalReport,
+    max_k: int = 10,
 ) -> list[str]:
-    """Return [MRR, R@10, P@10, Hit@10] formatted with abbreviated CIs."""
-    cis = all_retrieval_cis(report, [10])
+    """Return [MRR, R@5, R@10, P@10, Hit@10] formatted with abbreviated CIs.
+
+    ``max_k`` is the stage's output size. Metrics at a ``k`` larger than the
+    stage emits are inapplicable and rendered as dashes.
+    """
+    ks = [5, 10] if max_k >= 10 else [5]
+    cis = all_retrieval_cis(report, ks)
+    mrr = fmt_ci_abbrev(cis["MRR"]) if "MRR" in cis else "---"
+    r5 = fmt_ci_abbrev(cis["R@5"]) if "R@5" in cis else "---"
+    if max_k < 10:
+        return [mrr, r5, "---", "---", "---"]
     hit_ci: ConfidenceInterval = retrieval_ci(report, "hit", 10)
     return [
-        fmt_ci_abbrev(cis["MRR"]) if "MRR" in cis else "---",
+        mrr,
+        r5,
         fmt_ci_abbrev(cis["R@10"]) if "R@10" in cis else "---",
         fmt_ci_abbrev(cis["P@10"]) if "P@10" in cis else "---",
         fmt_ci_abbrev(hit_ci),
@@ -108,7 +128,15 @@ def _build_rows(
     for label, report_path in _PIPELINE_STAGES.items():
         report = load_report(Path(report_path))
         if report is not None:
-            pipeline_rows.append((label, _compute_ablation_cells(report)))
+            pipeline_rows.append(
+                (
+                    label,
+                    _compute_ablation_cells(
+                        report,
+                        max_k=_MAX_K_BY_LABEL.get(label, 10),
+                    ),
+                )
+            )
 
     return method_rows, pipeline_rows
 
@@ -134,7 +162,7 @@ def render_table() -> list[str]:
     all_rows = method_rows + pipeline_rows
 
     # Apply bold to best value in each metric column (across all rows)
-    for col_idx in range(4):
+    for col_idx in range(5):
         cells = [row_cells[col_idx] for _, row_cells in all_rows]
         bolded = mark_best(cells, direction="max")
         for i, (_lbl, row_cells) in enumerate(all_rows):
@@ -142,12 +170,14 @@ def render_table() -> list[str]:
 
     lines: list[str] = [
         r"\resizebox{\columnwidth}{!}{%",
-        r"\begin{tabular}{lcccc}",
+        r"\begin{tabular}{lccccc}",
         r"  \toprule",
         (
-            r"  \textbf{Pipeline} & \textbf{MRR} & \textbf{R@10}"
+            r"  \textbf{Pipeline} & \textbf{MRR} & \textbf{R@5} & \textbf{R@10}"
             r" & \textbf{P@10} & \textbf{Hit@10} \\"
         ),
+        r"  \midrule",
+        r"  \multicolumn{6}{l}{\textit{First-stage alternatives}} \\",
         r"  \midrule",
     ]
 
@@ -155,6 +185,8 @@ def render_table() -> list[str]:
         cell_str = " & ".join(cells)
         lines.append(f"  {label:<{_LABEL_PAD}s} & {cell_str} \\\\")
 
+    lines.append(r"  \midrule")
+    lines.append(r"  \multicolumn{6}{l}{\textit{Cumulative pipeline}} \\")
     lines.append(r"  \midrule")
 
     for label, cells in pipeline_rows:
