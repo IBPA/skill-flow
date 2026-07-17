@@ -62,13 +62,16 @@ def render_latex(dist: CorpusDistribution, summary: AuditSummary) -> list[str]:
     ]
     if summary.n_judged:
         lo, hi = summary.functional_ci
+        # The headline fraction is the conjunction (code-bearing AND code-sound
+        # AND no missing files); the tier rows are the judge's own labels, which
+        # are a separate axis and need not sum to it.
         body += [
-            f"  Judged functional (sample, n={summary.n_judged:,}) & "
+            f"  Runnable-complete (sample, n={summary.n_judged:,}) & "
             f"{pct(summary.functional_fraction)} "
-            f"{{\\scriptsize~[{pct(lo, 0)}, {pct(hi, 0)}]}} \\\\",
-            f"  \\quad tier: functional & {summary.tier_functional} \\\\",
-            f"  \\quad tier: partial & {summary.tier_partial} \\\\",
-            f"  \\quad tier: reference-only & {summary.tier_reference_only} \\\\",
+            f"{{\\scriptsize~[{pct(lo)}, {pct(hi)}]}} \\\\",
+            f"  \\quad judge tier: functional & {summary.tier_functional} \\\\",
+            f"  \\quad judge tier: partial & {summary.tier_partial} \\\\",
+            f"  \\quad judge tier: reference-only & {summary.tier_reference_only} \\\\",
         ]
     return [*top, *body, *bot]
 
