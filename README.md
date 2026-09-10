@@ -1,6 +1,6 @@
 # SkillFlow
 
-AI agents are increasingly capable, but discovering the right tool or workflow for a given task remains a bottleneck. SkillFlow addresses this by providing a scalable retrieval system over a corpus of ~36K agent skills crawled from online marketplaces. Given a natural-language task description, it returns the most relevant skills through a multi-stage pipeline: vector search, cross-encoder reranking, and LLM-based selection.
+AI agents are increasingly capable, but discovering the right tool or workflow for a given task remains a bottleneck. SkillFlow addresses this by providing a scalable retrieval system over a corpus of ~35K agent skills crawled from online marketplaces. Given a natural-language task description, it returns the most relevant skills through a multi-stage pipeline: vector search, cross-encoder reranking, and LLM-based selection.
 
 ![SkillFlow Overview](assets/1_overview.png)
 
@@ -38,7 +38,7 @@ uv run python -m skill_flow.cli search --query "write unit tests for FastAPI"
 
 | Stage | Candidates |
 |-------|------------|
-| 1 — Retrieval (bi-encoder + FAISS) | 36K → 1000 |
+| 1 — Retrieval (bi-encoder + FAISS) | 35K → 1000 |
 | 2 — Reranking (cross-encoder on full SKILL.md) | 1000 → 100 |
 | 3 — Deep Reranking (cross-encoder, higher content limit) | 100 → 10 |
 | 4 — Selection (LLM binary filter) | 10 → 5 |
