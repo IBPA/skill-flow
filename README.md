@@ -80,13 +80,12 @@ skill-flow/
 ## Citation
 
 ```bibtex
-@article{li2026skillflowscalableefficientagent,
-  title={SkillFlow: Scalable and Efficient Agent Skill Retrieval System}, 
-  author={Fangzhou Li and Pagkratios Tagkopoulos and Ilias Tagkopoulos},
-  year={2026},
-  eprint={2504.06188},
-  archivePrefix={arXiv},
-  primaryClass={cs.AI},
-  url={https://arxiv.org/abs/2504.06188}, 
+@inproceedings{
+li2026skillflow,
+title={SkillFlow: Scalable and Efficient Agent Skill Retrieval System},
+author={Fangzhou Li and Pagkratios Tagkopoulos and Ilias Tagkopoulos},
+booktitle={Third Conference on Language Modeling},
+year={2026},
+url={https://openreview.net/forum?id=79D1g9mNrm}
 }
 ```
