@@ -11,7 +11,7 @@ Usage::
     uv run python -m analysis.results.t3_generate_retrieval_stages
 
     uv run python -m analysis.results.t3_generate_retrieval_stages \
-        --output paper/tables/3_retrieval_stages.tex
+        --output ../skill-flow-manuscript/tables/3_retrieval_stages.tex
 """
 
 from __future__ import annotations
@@ -25,6 +25,7 @@ from analysis.results.utils.latex_utils import (
     load_report,
     write_or_print,
 )
+from analysis.results.utils.paths import TABLES_DIR
 from analysis.stats.retrieval_stats import all_retrieval_cis
 
 # ------------------------------------------------------------------
@@ -176,7 +177,7 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("paper/tables/3_retrieval_stages.tex"),
+        default=TABLES_DIR / "3_retrieval_stages.tex",
     )
     args = parser.parse_args()
 

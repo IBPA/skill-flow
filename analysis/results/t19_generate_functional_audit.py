@@ -4,9 +4,9 @@ Reports the full-corpus structural distribution (objective) and a sampled
 LLM-judged functional fraction (code-bearing AND code-sound AND
 no-missing-files, judged in context). Runtime correctness is out of scope.
 
-Writes ``paper/tables/19_functional_audit.tex`` plus a JSON record. The judge
-step calls the OpenAI API (needs OPENAI_API_KEY and network); pass
-``--no-judge`` to compute only the free structural distribution.
+Writes ``../skill-flow-manuscript/tables/19_functional_audit.tex`` plus a JSON
+record. The judge step calls the OpenAI API (needs OPENAI_API_KEY and network);
+pass ``--no-judge`` to compute only the free structural distribution.
 
 Usage::
 
@@ -32,6 +32,7 @@ from analysis.results.utils.functional_utils import (
     structural_distribution,
 )
 from analysis.results.utils.latex_utils import table_env, write_or_print
+from analysis.results.utils.paths import TABLES_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ def main() -> int:
         default=Path("outputs/analysis/functional_judge_cache.json"),
     )
     ap.add_argument(
-        "--latex-out", type=Path, default=Path("paper/tables/19_functional_audit.tex")
+        "--latex-out", type=Path, default=TABLES_DIR / "19_functional_audit.tex"
     )
     ap.add_argument(
         "--out", type=Path, default=Path("outputs/analysis/functional_audit.json")

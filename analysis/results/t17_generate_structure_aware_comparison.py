@@ -18,7 +18,7 @@ Usage::
 
     # LaTeX appendix table to a file
     uv run python -m analysis.results.t17_generate_structure_aware_comparison \\
-        --format latex --output paper/tables/t17_structure_aware.tex
+        --format latex --output ../skill-flow-manuscript/tables/t17_structure_aware.tex
 """
 
 from __future__ import annotations

@@ -9,7 +9,8 @@ trajectories (no new agent runs):
   injected (oracle-present / non-oracle-only / no-skills) so the non-oracle
   effect is isolated, with an overall paired-bootstrap test.
 
-Writes the help/hurt partition table to ``paper/tables/18_skill_usage.tex``
+Writes the help/hurt partition table to
+``../skill-flow-manuscript/tables/18_skill_usage.tex``
 (camera-ready artifact) plus a JSON record of all numbers.
 
 Usage::
@@ -20,7 +21,7 @@ Usage::
         --sf-prefix sk-skillflow-inject-gpt5mini-medium- \\
         --bl-prefix sk-baseline-gpt5mini-medium- \\
         --tasks-dir integration/skillsbench/tasks \\
-        --latex-out paper/tables/18_skill_usage.tex \\
+        --latex-out ../skill-flow-manuscript/tables/18_skill_usage.tex \\
         --out outputs/analysis/skill_usage_helphurt.json
 """
 
@@ -32,6 +33,7 @@ import logging
 from pathlib import Path
 
 from analysis.results.utils.latex_utils import table_env, write_or_print
+from analysis.results.utils.paths import TABLES_DIR
 from analysis.results.utils.usage_utils import (
     PartitionStat,
     collect_outcomes,
@@ -120,7 +122,7 @@ def main() -> int:
     ap.add_argument(
         "--latex-out",
         type=Path,
-        default=Path("paper/tables/18_skill_usage.tex"),
+        default=TABLES_DIR / "18_skill_usage.tex",
     )
     args = ap.parse_args()
 

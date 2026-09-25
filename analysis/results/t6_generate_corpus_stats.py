@@ -9,7 +9,7 @@ Usage::
 
     uv run python -m analysis.results.t6_generate_corpus_stats \
         --crawler-dir /path/to/skill-crawler \
-        --output paper/tables/6_corpus_stats.tex
+        --output ../skill-flow-manuscript/tables/6_corpus_stats.tex
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 
 from analysis.results.utils.latex_utils import write_or_print
+from analysis.results.utils.paths import TABLES_DIR
 
 # Crawler metadata now lives in this repo (data/skills/_metadata) after the
 # migration away from the standalone skill-crawler checkout.
@@ -123,7 +124,7 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("paper/tables/6_corpus_stats.tex"),
+        default=TABLES_DIR / "6_corpus_stats.tex",
     )
     args = parser.parse_args()
 

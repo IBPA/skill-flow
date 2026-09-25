@@ -25,6 +25,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from skill_flow.config import load_config
 
+from analysis.results.utils.paths import FIGURES_DIR
+
 logger = logging.getLogger(__name__)
 
 _BUCKET_EDGES = [0, 512, 1024, 2048, 4096, 8192]
@@ -154,7 +156,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("paper/figures/4_skill_dist.png"),
+        default=FIGURES_DIR / "4_skill_dist.png",
     )
     args = parser.parse_args()
 

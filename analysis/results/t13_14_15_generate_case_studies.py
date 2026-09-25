@@ -1,7 +1,7 @@
 """Generate case study pipeline progression tables (T13--T15).
 
-Each case study table is written to paper/tables/ as a standalone .tex file
-(13_case_study_1.tex, 14_case_study_2.tex, 15_case_study_3.tex).
+Each case study table is written to the manuscript repo's tables/ as a standalone
+.tex file (13_case_study_1.tex, 14_case_study_2.tex, 15_case_study_3.tex).
 The narrative text lives directly in main.tex.
 
 Usage::
@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from analysis.results.utils.latex_utils import write_or_print
+from analysis.results.utils.paths import TABLES_DIR
 
 _DEFAULT_PIPELINE_DIR = Path(
     "outputs/pipeline/skillsbench/specificity-v3.0",
@@ -141,7 +142,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Generate case study tables")
     ap.add_argument("--pipeline-dir", type=Path, default=_DEFAULT_PIPELINE_DIR)
     ap.add_argument("--task-ids", nargs="+", default=_DEFAULT_TASK_IDS)
-    ap.add_argument("--output-dir", type=Path, default=Path("paper/tables"))
+    ap.add_argument("--output-dir", type=Path, default=TABLES_DIR)
     args = ap.parse_args()
 
     stages = load_pipeline_stages(args.pipeline_dir)

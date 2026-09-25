@@ -73,7 +73,9 @@ uv run python -m analysis.comparison.compare_runs \
 
 ## Paper Assets
 
-Regenerate all tables and figures written to `paper/tables/` and `paper/figures/`:
+Regenerate all tables and figures into the `tables/` and `figures/` of the sibling
+`skill-flow-manuscript` repo (`../skill-flow-manuscript`; override with
+`SKILLFLOW_MANUSCRIPT_DIR`):
 
 ```bash
 bash analysis/results/generate-paper-assets.sh            # both

@@ -8,7 +8,7 @@ Usage::
     uv run python -m analysis.results.t2_generate_adoption
 
     uv run python -m analysis.results.t2_generate_adoption \
-        --output paper/tables/2_adoption.tex
+        --output ../skill-flow-manuscript/tables/2_adoption.tex
 
     uv run python -m analysis.results.t2_generate_adoption --print-pvalues
 """
@@ -30,6 +30,7 @@ from analysis.results.utils.adoption_utils import (
     format_row,
 )
 from analysis.results.utils.latex_utils import write_or_print
+from analysis.results.utils.paths import TABLES_DIR
 
 # -- Group builder -----------------------------------------------------
 
@@ -156,7 +157,7 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("paper/tables/2_adoption.tex"),
+        default=TABLES_DIR / "2_adoption.tex",
     )
     parser.add_argument(
         "--print-pvalues",
