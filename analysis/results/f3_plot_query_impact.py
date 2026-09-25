@@ -36,6 +36,7 @@ from analysis.results.utils.f3_panels import (
     plot_mrr,
     plot_recall,
 )
+from analysis.results.utils.paths import FIGURES_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +155,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("paper/figures/3_query_impact.png"),
+        default=FIGURES_DIR / "3_query_impact.png",
     )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")

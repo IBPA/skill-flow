@@ -11,7 +11,7 @@ Usage::
 
     uv run python -m analysis.results.t5_generate_latency \
         --run-dir outputs/pipeline/skillsbench/run-dir \
-        --output paper/tables/5_latency.tex
+        --output ../skill-flow-manuscript/tables/5_latency.tex
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ from pathlib import Path
 from skill_flow.pipeline.models import _compute_latency_stats
 
 from analysis.results.utils.latex_utils import write_or_print
+from analysis.results.utils.paths import TABLES_DIR
 
 _DEFAULT_RUN_DIR = Path(
     "outputs/pipeline/skillsbench/latency-run",
@@ -152,7 +153,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "--output",
-        default="paper/tables/5_latency.tex",
+        default=str(TABLES_DIR / "5_latency.tex"),
         help="Output .tex file (stdout if empty string)",
     )
     args = parser.parse_args(argv)

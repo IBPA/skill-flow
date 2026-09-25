@@ -9,7 +9,7 @@ Usage::
     uv run python -m analysis.results.t4_generate_stage_ablation
 
     uv run python -m analysis.results.t4_generate_stage_ablation \
-        --output paper/tables/4_stage_ablation.tex
+        --output ../skill-flow-manuscript/tables/4_stage_ablation.tex
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ from analysis.results.utils.latex_utils import (
     load_report,
     write_or_print,
 )
+from analysis.results.utils.paths import TABLES_DIR
 from analysis.stats.retrieval_stats import all_retrieval_cis, retrieval_ci
 
 if TYPE_CHECKING:
@@ -216,7 +217,7 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("paper/tables/4_stage_ablation.tex"),
+        default=TABLES_DIR / "4_stage_ablation.tex",
     )
     args = parser.parse_args()
 

@@ -8,7 +8,7 @@ Usage::
     uv run python -m analysis.results.t12_generate_excluded_tasks
 
     uv run python -m analysis.results.t12_generate_excluded_tasks \
-        --output paper/tables/12_excluded_tasks.tex
+        --output ../skill-flow-manuscript/tables/12_excluded_tasks.tex
 """
 
 from __future__ import annotations
@@ -20,8 +20,9 @@ from pathlib import Path
 from typing import TypedDict
 
 from analysis.results.utils.latex_utils import write_or_print
+from analysis.results.utils.paths import TABLES_DIR
 
-_DEFAULT_OUTPUT = Path("paper/tables/12_excluded_tasks.tex")
+_DEFAULT_OUTPUT = TABLES_DIR / "12_excluded_tasks.tex"
 
 
 class ExcludedTask(TypedDict):

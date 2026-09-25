@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Regenerate paper tables and/or figures from analysis data.
+# Regenerate paper tables and/or figures from analysis data into the sibling
+# skill-flow-manuscript repo (override with SKILLFLOW_MANUSCRIPT_DIR).
 #
 # Usage:
 #   bash analysis/results/generate-paper-assets.sh            # both
@@ -26,8 +27,15 @@ else
     done
 fi
 
+MANUSCRIPT_DIR="${SKILLFLOW_MANUSCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/skill-flow-manuscript}"
+if [[ ! -d "$MANUSCRIPT_DIR" ]]; then
+    echo "Error: manuscript repo not found at $MANUSCRIPT_DIR" >&2
+    echo "Clone skill-flow-manuscript next to skill-flow or set SKILLFLOW_MANUSCRIPT_DIR." >&2
+    exit 1
+fi
+
 # ------------------------------------------------------------------
-# Tables → paper/tables/
+# Tables → $MANUSCRIPT_DIR/tables/
 # ------------------------------------------------------------------
 if $DO_TABLES; then
     echo "Generating paper tables..."
@@ -45,11 +53,11 @@ if $DO_TABLES; then
     uv run python -m analysis.results.t12_generate_excluded_tasks
     uv run python -m analysis.results.t13_14_15_generate_case_studies
 
-    echo "Done. Tables written to paper/tables/"
+    echo "Done. Tables written to $MANUSCRIPT_DIR/tables/"
 fi
 
 # ------------------------------------------------------------------
-# Figures → paper/figures/
+# Figures → $MANUSCRIPT_DIR/figures/
 # ------------------------------------------------------------------
 if $DO_FIGURES; then
     echo "Generating paper figures..."
@@ -63,5 +71,5 @@ if $DO_FIGURES; then
 
     uv run python -m analysis.results.f4_plot_skill_dist
 
-    echo "Done. Figures written to paper/figures/"
+    echo "Done. Figures written to $MANUSCRIPT_DIR/figures/"
 fi

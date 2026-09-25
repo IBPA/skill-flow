@@ -19,6 +19,7 @@ from analysis.results.utils.latex_utils import (
     table_env,
     write_or_print,
 )
+from analysis.results.utils.paths import TABLES_DIR
 
 if TYPE_CHECKING:
     from skill_flow.eval.models import EvalReport
@@ -229,7 +230,7 @@ def main() -> int:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("paper/tables"),
+        default=TABLES_DIR,
     )
     args = parser.parse_args()
     out: Path = args.output_dir

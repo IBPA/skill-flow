@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 from analysis.comparison.compare_conditions import align_conditions
 from analysis.comparison.utils.loader import load_condition
 from analysis.results.utils.latex_utils import fmt_ci_pct, write_or_print
+from analysis.results.utils.paths import TABLES_DIR
 from analysis.stats.benchmark_stats import benchmark_ci, benchmark_paired_test
 from analysis.stats.proportions import holm_bonferroni
 
@@ -136,7 +137,7 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("paper/tables/20_selector_ablation.tex"),
+        default=TABLES_DIR / "20_selector_ablation.tex",
     )
     parser.add_argument(
         "--print-stats",

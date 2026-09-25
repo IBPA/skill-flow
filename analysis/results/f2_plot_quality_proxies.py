@@ -7,7 +7,7 @@ Usage::
 
     uv run python -m analysis.results.f2_plot_quality_proxies
     uv run python -m analysis.results.f2_plot_quality_proxies \
-        -o paper/figures/2_quality_proxies.png
+        -o ../skill-flow-manuscript/figures/2_quality_proxies.png
     uv run python -m analysis.results.f2_plot_quality_proxies --print-pvalues
 """
 
@@ -21,6 +21,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+from analysis.results.utils.paths import FIGURES_DIR
 from analysis.results.utils.quality_comparison_utils import (
     EXCLUDED,
     build_metrics,
@@ -86,7 +87,7 @@ def _plot(
     )
 
     fig.tight_layout(h_pad=4.0)
-    dest = output or Path("paper/figures/2_quality_proxies.png")
+    dest = output or FIGURES_DIR / "2_quality_proxies.png"
     dest.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(dest, dpi=300, bbox_inches="tight")
     print(f"Saved to {dest}")
@@ -118,7 +119,7 @@ def main(argv: list[str] | None = None) -> None:
         "-o",
         "--output",
         type=Path,
-        default=Path("paper/figures/2_quality_proxies.png"),
+        default=FIGURES_DIR / "2_quality_proxies.png",
         help="Output path",
     )
     parser.add_argument(

@@ -11,7 +11,7 @@ Usage::
     uv run python -m analysis.results.t7_generate_query_examples \
         --task-id court-form-filling \
         --cache path/to/retriever_query_gen_cache.json \
-        --output paper/tables/7_query_examples.tex
+        --output ../skill-flow-manuscript/tables/7_query_examples.tex
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 from analysis.results.utils.latex_utils import write_or_print
+from analysis.results.utils.paths import TABLES_DIR
 
 _DEFAULT_M1_CACHE = Path(
     "outputs/pipeline/skillsbench/specificity-v2.0/query_gen_cache.json",
@@ -30,7 +31,7 @@ _DEFAULT_M5_CACHE = Path(
     "outputs/experiments/querygen-v2-cache/query_gen_cache_5.json",
 )
 _DEFAULT_TASK = "court-form-filling"
-_DEFAULT_OUTPUT = Path("paper/tables/7_query_examples.tex")
+_DEFAULT_OUTPUT = TABLES_DIR / "7_query_examples.tex"
 
 
 def _escape_latex(text: str) -> str:
